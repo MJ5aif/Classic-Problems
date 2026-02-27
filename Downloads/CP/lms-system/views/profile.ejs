@@ -1,0 +1,742 @@
+<%- include('partials/header') %>
+
+<style>
+  /* ── Profile page styles ─────────────────────────────── */
+  .profile-cover-wrap {
+    position: relative;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    height: 280px;
+  }
+  /* Gradient fallback — always underneath */
+  .profile-cover {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 40%, #6200ea 100%);
+    position: absolute;
+    inset: 0;
+  }
+  .profile-cover.instructor {
+    background: linear-gradient(135deg, #1a7f5a 0%, #00695c 50%, #1565c0 100%);
+  }
+  .profile-cover.admin {
+    background: linear-gradient(135deg, #b71c1c 0%, #880e4f 50%, #4a148c 100%);
+  }
+  /* Actual cover photo — sits on top of gradient */
+  .cover-photo-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: filter 0.25s;
+  }
+  .profile-cover-wrap:hover .cover-photo-img { filter: brightness(0.85); }
+
+  /* Change-cover overlay button */
+  .cover-change-btn {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border: 1.5px solid rgba(255,255,255,0.55);
+    border-radius: 8px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s, transform 0.2s, background 0.2s;
+    backdrop-filter: blur(4px);
+  }
+  .profile-cover-wrap:hover .cover-change-btn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .cover-change-btn:hover { background: rgba(0,0,0,0.78); }
+
+  /* Avatar */
+  .profile-avatar-wrap {
+    position: absolute;
+    bottom: -80px;
+    left: 2.5rem;
+    z-index: 10;
+  }
+  .profile-avatar {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    border: 5px solid white;
+    background: var(--primary-light);
+    object-fit: cover;
+    display: block;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  }
+  .avatar-initials {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    border: 5px solid white;
+    background: var(--primary);
+    color: white;
+    font-size: 3rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 2px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  }
+  .avatar-upload-btn {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    border: 3px solid white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .avatar-upload-btn:hover { background: var(--dark); }
+
+  .profile-header-card {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    padding: 6rem 2rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.25rem;
+    position: relative;
+  }
+  .profile-name { font-size: 1.6rem; font-weight: 700; margin: 0 0 0.2rem; }
+  .profile-headline { color: var(--gray); font-size: 0.95rem; margin: 0 0 0.4rem; }
+  .profile-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 0.5rem; }
+  .profile-meta-item { color: var(--gray); font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem; }
+  .profile-meta-item a { color: var(--primary); text-decoration: none; }
+  .profile-meta-item a:hover { text-decoration: underline; }
+
+  .profile-stats {
+    display: flex; gap: 1.5rem; flex-wrap: wrap;
+    padding: 1rem 2rem;
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+  }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+  .stat-lbl { font-size: 0.75rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .profile-section-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.25rem;
+  }
+  .profile-section-card h3 { margin: 0 0 1rem; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; }
+
+  .skill-chip {
+    display: inline-block;
+    background: #eef4ff;
+    color: #1a73e8;
+    border: 1px solid #c7d9fa;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin: 0.2rem 0.2rem 0.2rem 0;
+  }
+
+  .edit-panel {
+    background: #f8faff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+  }
+  .edit-panel .form-group { margin-bottom: 1rem; }
+  .edit-panel label { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; display: block; color: var(--dark); }
+  .edit-panel input, .edit-panel textarea, .edit-panel select {
+    width: 100%; padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border); border-radius: 7px;
+    font-size: 0.9rem; font-family: inherit;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  .edit-panel input:focus, .edit-panel textarea:focus { border-color: var(--primary); outline: none; }
+  .edit-panel textarea { min-height: 90px; resize: vertical; }
+  .char-count { font-size: 0.75rem; color: var(--gray); text-align: right; margin-top: 0.15rem; }
+
+  .pic-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .pic-upload-area:hover { border-color: var(--primary); background: #f0f4ff; }
+  .pic-upload-area input[type="file"] { display: none; }
+
+  @media (max-width: 600px) {
+    .profile-cover-wrap { height: 180px; }
+    .profile-avatar-wrap { bottom: -60px; left: 1rem; }
+    .profile-avatar, .avatar-initials { width: 120px; height: 120px; font-size: 2.2rem; }
+    .profile-header-card { padding: 5rem 1rem 1rem; }
+    .profile-stats { flex-direction: column; gap: 0.75rem; padding: 1rem; }
+    .profile-section-card { padding: 1rem; }
+    .cover-change-btn { opacity: 1; transform: none; }
+  }
+</style>
+
+<div class="container" style="max-width: 860px; margin: 0 auto;">
+
+  <!-- ── Cover + Avatar ─────────────────────────────── -->
+  <div style="position: relative;">
+    <div class="profile-cover-wrap">
+      <!-- gradient always present as fallback -->
+      <div class="profile-cover <%= user.role %>"></div>
+      <!-- cover photo img renders on top if set -->
+      <% if (user.coverPhoto) { %>
+        <img src="<%= user.coverPhoto %>" class="cover-photo-img" id="coverPhotoImg" alt="Cover photo">
+      <% } else { %>
+        <img id="coverPhotoImg" class="cover-photo-img" style="display:none;" alt="Cover photo">
+      <% } %>
+      <!-- Change cover button (visible on hover, own profile only) -->
+      <% if (isOwnProfile) { %>
+      <button class="cover-change-btn" onclick="document.getElementById('coverFileInput').click()" title="Change cover photo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-8.5-5.5l-2.5 3.01L7 14l-4 5h18l-5.5-7.5z"/></svg>
+        Change Cover
+      </button>
+      <input type="file" id="coverFileInput" accept="image/jpeg,image/png,image/webp,image/gif"
+             style="display:none" onchange="uploadCover(this)">
+      <% } %>
+    </div>
+
+    <div class="profile-avatar-wrap" id="avatarWrap">
+      <div style="position:relative; display:inline-block;">
+        <% if (user.profilePicture) { %>
+          <img src="<%= user.profilePicture %>" alt="<%= user.name %>" class="profile-avatar" id="avatarImg">
+        <% } else { %>
+          <div class="avatar-initials" id="avatarImg">
+            <%= user.name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase() %>
+          </div>
+        <% } %>
+        <% if (isOwnProfile) { %><button class="avatar-upload-btn" onclick="document.getElementById('picFileInput').click()" title="Change photo">📷</button><% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Profile Header Card ────────────────────────── -->
+  <div class="profile-header-card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h1 class="profile-name"><%= user.name %></h1>
+        <% if (user.headline) { %>
+          <p class="profile-headline"><%= user.headline %></p>
+        <% } else { %>
+          <p class="profile-headline" style="font-style:italic; color:#bbb;">
+            <%= user.role === 'instructor' ? 'Instructor at LMS' : user.role === 'admin' ? 'LMS Administrator' : 'Learner at LMS' %>
+          </p>
+        <% } %>
+
+        <div class="profile-meta">
+          <span class="badge badge-<%= user.role === 'instructor' ? 'success' : user.role === 'admin' ? 'danger' : 'primary' %>"
+                style="font-size:0.8rem;">
+            <%= user.role === 'instructor' ? '👨‍🏫 Instructor' : user.role === 'admin' ? '🔑 Admin' : '🎓 Learner' %>
+          </span>
+          <% if (user.location) { %>
+            <span class="profile-meta-item">📍 <%= user.location %></span>
+          <% } %>
+          <% if (user.website) { %>
+            <span class="profile-meta-item">🌐 <a href="<%= user.website %>" target="_blank" rel="noopener"><%= user.website.replace(/^https?:\/\//, '') %></a></span>
+          <% } %>
+          <% if (user.linkedinUrl) { %>
+            <span class="profile-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#0a66c2" style="vertical-align:middle;"><path d="M20.447 20.452H17.21v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.987V9h3.104v1.561h.046c.432-.817 1.487-1.679 3.059-1.679 3.271 0 3.874 2.153 3.874 4.954v6.616zM5.337 7.433c-.995 0-1.801-.806-1.801-1.8 0-.994.806-1.8 1.801-1.8.994 0 1.8.806 1.8 1.8 0 .994-.806 1.8-1.8 1.8zm1.581 13.019H3.755V9h3.163v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              <a href="<%= user.linkedinUrl %>" target="_blank" rel="noopener">LinkedIn</a>
+            </span>
+          <% } %>
+          <% if (isOwnProfile) { %><span class="profile-meta-item">✉️ <%= user.email %></span><% } %>
+        </div>
+      </div>
+
+      <% if (isOwnProfile) { %>
+      <button onclick="toggleEditPanel()" class="btn btn-outline" id="editToggleBtn" style="white-space:nowrap;">
+        ✏️ Edit Profile
+      </button>
+      <% } %>
+    </div>
+
+    <!-- Stats bar -->
+    <% if (instructorStats || learnerStats) { %>
+      <div class="profile-stats">
+        <% if (instructorStats) { %>
+          <div class="stat-item">
+            <div class="stat-num"><%= instructorStats.courseCount %></div>
+            <div class="stat-lbl">Courses</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num"><%= instructorStats.totalSells %></div>
+            <div class="stat-lbl">Total Sells</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num" style="color:#f59e0b;">
+              <% if (instructorStats.avgRating > 0) { %>
+                ★ <%= instructorStats.avgRating %>
+              <% } else { %>
+                —
+              <% } %>
+            </div>
+            <div class="stat-lbl">Avg Rating (<%= instructorStats.totalRatings %> reviews)</div>
+          </div>
+        <% } %>
+        <% if (learnerStats) { %>
+          <div class="stat-item">
+            <div class="stat-num"><%= learnerStats.enrolledCount %></div>
+            <div class="stat-lbl">Courses Admitted</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num"><%= learnerStats.completedCount %></div>
+            <div class="stat-lbl">Completed</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num"><%= learnerStats.quizCount %></div>
+            <div class="stat-lbl">Quizzes Taken</div>
+          </div>
+        <% } %>
+        <div class="stat-item">
+          <div class="stat-num" style="font-size:1rem;">
+            <%= new Date(user.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'short' }) %>
+          </div>
+          <div class="stat-lbl">Member Since</div>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ── Edit Profile Panel (own profile only) ────── -->
+  <% if (isOwnProfile) { %>
+  <div id="editPanel" style="display:none;" class="profile-section-card">
+    <h3>✏️ Edit Profile</h3>
+    <div id="editAlert"></div>
+
+    <!-- Profile picture upload -->
+    <div class="edit-panel" style="margin-bottom:1.25rem;">
+      <p class="font-bold text-sm mb-2">📷 Profile Picture</p>
+      <div class="pic-upload-area" onclick="document.getElementById('picFileInput').click()">
+        <p style="font-size:2rem; margin:0;">🖼️</p>
+        <p class="text-sm text-gray mt-1">Click to upload a photo (JPG, PNG, GIF, WebP · max 5 MB)</p>
+        <p class="text-sm" id="picFileName" style="color:var(--primary); margin-top:0.3rem;"></p>
+      </div>
+      <input type="file" id="picFileInput" accept="image/jpeg,image/png,image/gif,image/webp"
+             onchange="onPicSelected(this)">
+      <button class="btn btn-sm btn-primary mt-2" id="picUploadBtn" onclick="uploadPicture()" style="display:none;">
+        Upload Photo
+      </button>
+    </div>
+
+    <!-- Cover photo upload -->
+    <div class="edit-panel" style="margin-bottom:1.25rem;">
+      <p class="font-bold text-sm mb-2">🖼️ Cover Photo</p>
+      <div class="pic-upload-area" onclick="document.getElementById('coverFileInput').click()">
+        <% if (user.coverPhoto) { %>
+          <img src="<%= user.coverPhoto %>" alt="Cover" style="max-height:100px; border-radius:6px; margin-bottom:0.5rem;">
+          <p class="text-sm text-gray">Click to replace cover photo</p>
+        <% } else { %>
+          <p style="font-size:2rem; margin:0;">🏞️</p>
+          <p class="text-sm text-gray mt-1">Click to upload a cover photo (JPG, PNG, WebP · max 5 MB)</p>
+        <% } %>
+        <p class="text-sm" id="coverFileName" style="color:var(--primary); margin-top:0.3rem;"></p>
+      </div>
+      <p class="text-sm text-gray mt-1">💡 Best size: 1400 × 400 px or wider landscape image</p>
+    </div>
+
+    <!-- Info form -->
+    <div class="edit-panel">
+      <p class="font-bold text-sm mb-2">👤 Profile Info</p>
+      <div class="grid grid-2" style="gap:1rem;">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="editName" value="<%= user.name %>" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label>Headline <span class="text-gray" style="font-weight:400;">(your role/title)</span></label>
+          <input type="text" id="editHeadline" value="<%= user.headline || '' %>" maxlength="150"
+                 placeholder="e.g. Full-Stack Developer & Educator"
+                 oninput="document.getElementById('headlineCount').textContent = this.value.length + '/150'">
+          <div class="char-count" id="headlineCount"><%= (user.headline || '').length %>/150</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Bio <span class="text-gray" style="font-weight:400;">(about yourself)</span></label>
+        <textarea id="editBio" maxlength="600"
+                  placeholder="Share your background, expertise, and what you're passionate about..."
+                  oninput="document.getElementById('bioCount').textContent = this.value.length + '/600'"><%= user.bio || '' %></textarea>
+        <div class="char-count" id="bioCount"><%= (user.bio || '').length %>/600</div>
+      </div>
+
+      <div class="grid grid-2" style="gap:1rem;">
+        <div class="form-group">
+          <label>📍 Location</label>
+          <input type="text" id="editLocation" value="<%= user.location || '' %>" maxlength="100"
+                 placeholder="e.g. Dhaka, Bangladesh">
+        </div>
+        <div class="form-group">
+          <label>🌐 Website</label>
+          <input type="url" id="editWebsite" value="<%= user.website || '' %>"
+                 placeholder="https://yoursite.com">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#0a66c2" style="vertical-align:middle;margin-right:4px;"><path d="M20.447 20.452H17.21v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.987V9h3.104v1.561h.046c.432-.817 1.487-1.679 3.059-1.679 3.271 0 3.874 2.153 3.874 4.954v6.616zM5.337 7.433c-.995 0-1.801-.806-1.801-1.8 0-.994.806-1.8 1.801-1.8.994 0 1.8.806 1.8 1.8 0 .994-.806 1.8-1.8 1.8zm1.581 13.019H3.755V9h3.163v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          LinkedIn URL
+        </label>
+        <input type="url" id="editLinkedin" value="<%= user.linkedinUrl || '' %>"
+               placeholder="https://linkedin.com/in/yourprofile">
+      </div>
+
+      <div class="form-group">
+        <label>🏷️ Skills <span class="text-gray" style="font-weight:400;">(comma-separated, max 20)</span></label>
+        <input type="text" id="editSkills"
+               value="<%= user.skills && user.skills.length ? user.skills.join(', ') : '' %>"
+               placeholder="e.g. JavaScript, React, Node.js, Python">
+      </div>
+
+      <button class="btn btn-primary" id="saveProfileBtn" onclick="saveProfile()">💾 Save Profile</button>
+      <button type="button" class="btn btn-outline" style="margin-left:0.5rem;" onclick="openPinModal()">🔐 Change Bank PIN</button>
+      <button class="btn" style="background:var(--light-gray); margin-left:0.5rem;" onclick="toggleEditPanel()">Cancel</button>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ── Bank Account Setup (own profile + learner only) ── -->
+  <% if (isOwnProfile && user.role === 'learner' && !user.bankAccountNumber) { %>
+    <div class="profile-section-card" style="border-left:4px solid #f59e0b;">
+      <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;">
+        <span style="font-size:1.4rem;">🏦</span>
+        <div>
+          <h3 style="margin:0;">Set Up Bank Account</h3>
+          <p class="text-sm text-gray" style="margin:0.2rem 0 0;">Required to purchase courses.</p>
+        </div>
+        <span class="badge badge-warning" style="margin-left:auto;font-size:0.75rem;">⚠️ Not Set Up</span>
+      </div>
+      <div id="bankSetupAlert"></div>
+      <form onsubmit="setupBankFromProfile(event)">
+        <div class="grid grid-2" style="gap:1rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="profAccountNumber">Account Number <span class="text-gray" style="font-weight:400;">(10 digits)</span></label>
+            <input type="text" id="profAccountNumber" class="form-control" placeholder="e.g. 1234567890"
+                   pattern="\d{10}" maxlength="10" required>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="profSecretKey">Secret Key <span class="text-gray" style="font-weight:400;">(min 4 chars)</span></label>
+            <input type="password" id="profSecretKey" class="form-control" placeholder="Your secret key"
+                   minlength="4" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success mt-2" id="bankSetupBtn">🏦 Create Bank Account (+৳10,000 bonus)</button>
+      </form>
+    </div>
+  <% } else if (isOwnProfile && user.role === 'learner' && user.bankAccountNumber) { %>
+    <div class="profile-section-card" style="border-left:4px solid #22c55e;">
+      <div style="display:flex;align-items:center;gap:0.6rem;">
+        <span style="font-size:1.4rem;">🏦</span>
+        <div>
+          <h3 style="margin:0;">Bank Account</h3>
+          <p class="text-sm text-gray" style="margin:0.2rem 0 0;">Account: <strong><%= user.bankAccountNumber %></strong></p>
+        </div>
+        <span class="badge badge-success" style="margin-left:auto;font-size:0.75rem;">✅ Active</span>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ── Bio Section ────────────────────────────────── -->
+  <% if (user.bio) { %>
+    <div class="profile-section-card">
+      <h3>📝 About</h3>
+      <p style="line-height:1.7; white-space:pre-wrap; color:var(--dark)"><%= user.bio %></p>
+    </div>
+  <% } %>
+
+  <!-- ── Skills ─────────────────────────────────────── -->
+  <% if (user.skills && user.skills.length > 0) { %>
+    <div class="profile-section-card">
+      <h3>🏷️ Skills</h3>
+      <div>
+        <% user.skills.forEach(skill => { %>
+          <span class="skill-chip"><%= skill %></span>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ── Instructor: Course list ───────────────────── -->
+  <% if (user.role === 'instructor' && instructorStats && instructorStats.courseCount > 0) { %>
+    <div class="profile-section-card">
+      <h3>📚 Courses by this Instructor</h3>
+      <p class="text-sm text-gray">
+        <%= instructorStats.courseCount %> course<%= instructorStats.courseCount !== 1 ? 's' : '' %> · 
+        <%= instructorStats.totalEnrolled %> total student<%= instructorStats.totalEnrolled !== 1 ? 's' : '' %> enrolled
+      </p>
+      <a href="/courses-page" class="btn btn-sm btn-outline mt-2">Browse Courses</a>
+    </div>
+  <% } %>
+
+  <!-- ── Learner: Enrolled courses ─────────────────── -->
+  <% if (user.role === 'learner' && user.purchasedCourses && user.purchasedCourses.length > 0) { %>
+    <div class="profile-section-card">
+      <h3>🎓 Enrolled Courses (<%= user.purchasedCourses.length %>)</h3>
+      <% user.purchasedCourses.forEach(pc => { %>
+        <% if (pc.courseId) { %>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0; border-bottom:1px solid var(--border);">
+            <div>
+              <span class="text-sm font-bold"><%= pc.courseId.title %></span>
+              <br>
+              <span class="text-sm text-gray">👨‍🏫 <%= pc.courseId.instructorId ? pc.courseId.instructorId.name : 'Unknown' %></span>
+            </div>
+            <% if (pc.completed) { %>
+              <span class="badge badge-success" style="font-size:0.75rem;">✅ Completed</span>
+            <% } else { %>
+              <a href="/course/<%= pc.courseId._id %>" class="btn btn-sm btn-outline" style="font-size:0.75rem;">Continue</a>
+            <% } %>
+          </div>
+        <% } %>
+      <% }); %>
+    </div>
+  <% } %>
+
+</div><!-- /container -->
+
+<!-- ── Bank PIN Change Modal ── -->
+<div id="pinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:2rem;width:90%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h3 style="margin:0 0 1.25rem;font-size:1.1rem;font-weight:700;">🔐 Change Bank PIN</h3>
+    <p class="text-sm text-gray" style="margin-bottom:1.25rem;">Your default PIN is <strong>1234</strong>. Enter it as the current PIN if you haven't changed it before.</p>
+    <div id="pinModalAlert"></div>
+    <div class="form-group">
+      <label>Current PIN</label>
+      <input type="password" class="form-control" id="currentPin" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="Current 4-digit PIN">
+    </div>
+    <div class="form-group">
+      <label>New PIN</label>
+      <input type="password" class="form-control" id="newPin" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="New 4-digit PIN">
+    </div>
+    <div class="form-group">
+      <label>Confirm New PIN</label>
+      <input type="password" class="form-control" id="confirmPin" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="Re-enter new PIN">
+    </div>
+    <div style="display:flex;gap:0.75rem;margin-top:1.25rem;">
+      <button class="btn btn-primary" id="pinSaveBtn" onclick="doChangePIN()">Save PIN</button>
+      <button class="btn btn-secondary" onclick="closePinModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let _editOpen = false;
+
+  async function apiCall(url, method = 'GET', body = null) {
+    const opts = {
+      method,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const resp = await fetch(url, opts);
+    return resp.json();
+  }
+
+  function toggleEditPanel() {
+    _editOpen = !_editOpen;
+    document.getElementById('editPanel').style.display = _editOpen ? 'block' : 'none';
+    document.getElementById('editToggleBtn').textContent = _editOpen ? '✕ Close Editor' : '✏️ Edit Profile';
+    if (_editOpen) document.getElementById('editPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function onPicSelected(input) {
+    const file = input.files[0];
+    if (!file) return;
+    document.getElementById('picFileName').textContent = file.name;
+    document.getElementById('picUploadBtn').style.display = 'inline-block';
+  }
+
+  async function uploadCover(input) {
+    const file = input ? input.files[0] : null;
+    if (!file) return;
+    const alertDiv = document.getElementById('editAlert') || document.createElement('div');
+    document.getElementById('coverFileName').textContent = file.name;
+
+    const formData = new FormData();
+    formData.append('coverPhoto', file);
+    try {
+      const resp = await fetch('/auth/profile/cover', {
+        method: 'PUT',
+        credentials: 'include',
+        body: formData
+      });
+      const result = await resp.json();
+      if (result.success) {
+        // Update cover immediately without full reload
+        const coverEl = document.querySelector('.cover-photo-img');
+        if (coverEl) {
+          coverEl.src = result.data.coverPhoto + '?t=' + Date.now();
+          coverEl.style.display = 'block';
+        }
+        // Show brief success toast
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;background:#1a7f5a;color:white;padding:0.75rem 1.25rem;border-radius:8px;font-size:0.9rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
+        toast.textContent = '✅ Cover photo updated!';
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.remove(); window.location.reload(); }, 1200);
+      } else {
+        if (alertDiv.id === 'editAlert') alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        else alert('Cover upload failed: ' + result.message);
+      }
+    } catch (err) {
+      alert('Cover upload failed. Please try again.');
+    }
+  }
+
+  async function uploadPicture() {
+    const input = document.getElementById('picFileInput');
+    const file = input.files[0];
+    if (!file) return;
+
+    const btn = document.getElementById('picUploadBtn');
+    btn.disabled = true; btn.textContent = 'Uploading...';
+    const alertDiv = document.getElementById('editAlert');
+
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+
+    try {
+      const resp = await fetch('/auth/profile/picture', {
+        method: 'PUT',
+        credentials: 'include',
+        body: formData
+      });
+      const result = await resp.json();
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">✅ Photo updated! Reloading...</div>';
+        setTimeout(() => window.location.reload(), 900);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = 'Upload Photo';
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+      btn.disabled = false; btn.textContent = 'Upload Photo';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openPinModal() {
+    document.getElementById('pinModal').style.display = 'flex';
+    document.getElementById('currentPin').value = '';
+    document.getElementById('newPin').value = '';
+    document.getElementById('confirmPin').value = '';
+    document.getElementById('pinModalAlert').innerHTML = '';
+  }
+  function closePinModal() {
+    document.getElementById('pinModal').style.display = 'none';
+  }
+  async function doChangePIN() {
+    const alertDiv = document.getElementById('pinModalAlert');
+    const btn = document.getElementById('pinSaveBtn');
+    const currentPin = document.getElementById('currentPin').value.trim();
+    const newPin = document.getElementById('newPin').value.trim();
+    const confirmPin = document.getElementById('confirmPin').value.trim();
+    if (!currentPin || !newPin || !confirmPin) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">All fields are required.</div>'; return;
+    }
+    if (!/^\d{4}$/.test(newPin)) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">New PIN must be exactly 4 digits.</div>'; return;
+    }
+    if (newPin !== confirmPin) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">PINs do not match.</div>'; return;
+    }
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      const result = await apiCall('/auth/change-pin', 'PUT', { currentPin, newPin });
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">✅ PIN changed successfully!</div>';
+        setTimeout(() => closePinModal(), 1500);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = 'Save PIN';
+      }
+    } catch (e) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Network error.</div>';
+      btn.disabled = false; btn.textContent = 'Save PIN';
+    }
+  }
+
+  async function setupBankFromProfile(e) {
+    e.preventDefault();
+    const btn = document.getElementById('bankSetupBtn');
+    const alertDiv = document.getElementById('bankSetupAlert');
+    const accountNumber = document.getElementById('profAccountNumber').value;
+    const secretKey = document.getElementById('profSecretKey').value;
+    btn.disabled = true; btn.textContent = 'Setting up...';
+    try {
+      const result = await apiCall('/bank/create-account', 'POST', { accountNumber, secretKey });
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">🎉 Bank account created! Refreshing…</div>';
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = '🏦 Create Bank Account (+৳10,000 bonus)';
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Network error.</div>';
+      btn.disabled = false; btn.textContent = '🏦 Create Bank Account (+৳10,000 bonus)';
+    }
+  }
+
+  async function saveProfile() {
+    const btn = document.getElementById('saveProfileBtn');
+    const alertDiv = document.getElementById('editAlert');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    const payload = {
+      name: document.getElementById('editName').value,
+      bio: document.getElementById('editBio').value,
+      headline: document.getElementById('editHeadline').value,
+      location: document.getElementById('editLocation').value,
+      website: document.getElementById('editWebsite').value,
+      linkedinUrl: document.getElementById('editLinkedin').value,
+      skills: document.getElementById('editSkills').value
+    };
+
+    try {
+      const result = await apiCall('/auth/profile', 'PUT', payload);
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">✅ Profile saved! Reloading...</div>';
+        setTimeout(() => window.location.reload(), 900);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = '💾 Save Profile';
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error saving profile.</div>';
+      btn.disabled = false; btn.textContent = '💾 Save Profile';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+<%- include('partials/footer') %>

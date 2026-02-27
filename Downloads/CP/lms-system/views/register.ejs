@@ -1,0 +1,131 @@
+<%- include('partials/header') %>
+
+<!-- Register Page -->
+<div class="auth-container">
+  <div class="auth-card">
+    <h2>Create Account</h2>
+    <p class="subtitle">Join our LMS platform</p>
+
+    <div id="registerAlert"></div>
+
+    <!-- Role toggle -->
+    <div class="form-group">
+      <label>I am registering as</label>
+      <div style="display:flex; gap:0.75rem; margin-top:0.4rem;">
+        <button type="button" id="roleBtn-learner" onclick="selectRole('learner')"
+                class="btn btn-primary" style="flex:1; font-size:0.95rem; padding:0.6rem 1rem;">
+          👨‍🎓 Student
+        </button>
+        <button type="button" id="roleBtn-instructor" onclick="selectRole('instructor')"
+                class="btn btn-outline" style="flex:1; font-size:0.95rem; padding:0.6rem 1rem;">
+          👨‍🏫 Instructor
+        </button>
+      </div>
+      <input type="hidden" id="selectedRole" value="learner">
+    </div>
+
+    <!-- Role description pill -->
+    <div id="roleDesc" style="background:#eef4ff; border-radius:8px; padding:0.6rem 0.9rem; margin-bottom:1rem; font-size:0.85rem; color:#3b5bdb;">
+      📚 Students can browse & enroll in courses, take quizzes, and earn certificates.
+    </div>
+
+    <form id="registerForm" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" class="form-control" placeholder="Enter your full name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" class="form-control" placeholder="Enter your email" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" class="form-control" placeholder="Minimum 6 characters" required minlength="6">
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm your password" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="registerBtn">
+        Create Account
+      </button>
+    </form>
+
+    <p class="text-center mt-2 text-gray">
+      Already have an account? <a href="/auth/login">Login here</a>
+    </p>
+  </div>
+</div>
+
+<script>
+  // Redirect if already logged in
+  (function() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name] = cookie.trim().split('=');
+      if (name === 'token') { window.location.href = '/dashboard'; return; }
+    }
+  })();
+
+  const ROLE_DESC = {
+    learner: '📚 Students can browse & enroll in courses, take quizzes, and earn certificates.',
+    instructor: '🏫 Instructors can create and manage courses, upload materials, and track student progress.'
+  };
+
+  function selectRole(role) {
+    document.getElementById('selectedRole').value = role;
+    const desc = document.getElementById('roleDesc');
+    desc.textContent = ROLE_DESC[role];
+    desc.style.color = role === 'instructor' ? '#1a7f5a' : '#3b5bdb';
+    desc.style.background = role === 'instructor' ? '#edfaf3' : '#eef4ff';
+
+    ['learner', 'instructor'].forEach(r => {
+      const btn = document.getElementById('roleBtn-' + r);
+      if (r === role) {
+        btn.classList.remove('btn-outline'); btn.classList.add('btn-primary');
+      } else {
+        btn.classList.remove('btn-primary'); btn.classList.add('btn-outline');
+      }
+    });
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const role = document.getElementById('selectedRole').value;
+    const btn = document.getElementById('registerBtn');
+    const alertDiv = document.getElementById('registerAlert');
+
+    if (password !== confirmPassword) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Passwords do not match!</div>';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Creating account...';
+
+    try {
+      const result = await apiCall('/auth/register', 'POST', { name, email, password, role });
+      if (result.success) {
+        document.cookie = `token=${result.data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+        alertDiv.innerHTML = '<div class="alert alert-success">Account created! Redirecting to dashboard...</div>';
+        setTimeout(() => { window.location.href = '/dashboard'; }, 500);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = 'Create Account';
+      }
+    } catch (error) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+      btn.disabled = false; btn.textContent = 'Create Account';
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

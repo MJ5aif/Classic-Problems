@@ -1,0 +1,136 @@
+<%- include('partials/header') %>
+
+<!-- Admin Dashboard -->
+<div class="container">
+  <div class="dashboard-header">
+    <div>
+      <h1>🏢 Admin Dashboard</h1>
+      <p class="text-gray">LMS Organization Management Panel</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-4 mb-3">
+    <div class="balance-card" style="grid-column: span 1;">
+      <div class="balance-label">LMS Balance</div>
+      <div class="balance-amount" style="font-size: 2rem;">৳<%= lmsBalance.toLocaleString() %></div>
+      <div class="balance-account">Organization Account</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number"><%= stats.totalCourses %></div>
+      <div class="stat-label">Total Courses</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number"><%= stats.totalInstructors %></div>
+      <div class="stat-label">Instructors</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number"><%= stats.totalLearners %></div>
+      <div class="stat-label">Learners</div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="dashboard-section">
+    <h2>💳 Recent Transactions</h2>
+    
+    <% if (transactions && transactions.length > 0) { %>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Buyer</th>
+              <th>Course</th>
+              <th>Amount</th>
+              <th>LMS Commission</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% transactions.forEach(function(tx, index) { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= tx.buyerId ? tx.buyerId.name : 'Unknown' %></td>
+                <td><%= tx.courseId ? tx.courseId.title : 'Unknown' %></td>
+                <td class="font-bold">৳<%= tx.amount %></td>
+                <td class="text-success font-bold">৳<%= tx.lmsCommission || 0 %></td>
+                <td>
+                  <span class="badge badge-<%= tx.status === 'success' ? 'success' : tx.status === 'pending' ? 'warning' : 'danger' %>">
+                    <%= tx.status %>
+                  </span>
+                </td>
+                <td class="text-sm text-gray"><%= new Date(tx.createdAt).toLocaleDateString() %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="empty-state">
+        <div class="icon">💳</div>
+        <h3>No Transactions Yet</h3>
+        <p>Transactions will appear here when learners purchase courses.</p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- All Courses with Enrolled Students -->
+  <div class="dashboard-section">
+    <h2>📚 All Courses & Enrollments</h2>
+    
+    <% if (allCourses && allCourses.length > 0) { %>
+      <div class="grid grid-2">
+        <% allCourses.forEach(function(course) { %>
+          <div class="card">
+            <div class="card-body">
+              <div class="flex-between">
+                <div>
+                  <h3 style="margin: 0;"><%= course.title %></h3>
+                  <p class="text-sm text-gray mt-1">by <%= course.instructorId ? course.instructorId.name : 'Unknown' %></p>
+                </div>
+                <div class="text-right">
+                  <span class="course-price">৳<%= course.price %></span>
+                  <br>
+                  <span class="badge badge-primary"><%= course.category || 'General' %></span>
+                </div>
+              </div>
+              
+              <!-- Enrolled Students -->
+              <div class="mt-2" style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
+                <p class="text-sm font-bold">👥 Enrolled Students (<%= course.enrolledStudents ? course.enrolledStudents.length : 0 %>)</p>
+                <% if (course.enrolledStudents && course.enrolledStudents.length > 0) { %>
+                  <div style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem;">
+                    <% course.enrolledStudents.forEach(function(es, idx) { %>
+                      <% if (es.studentId) { %>
+                        <div class="text-sm" style="padding: 0.3rem 0; border-bottom: 1px solid var(--border);">
+                          <%= idx + 1 %>. <strong><%= es.studentId.name %></strong>
+                          <span class="text-gray">(<%= es.studentId.email %>)</span>
+                        </div>
+                      <% } %>
+                    <% }); %>
+                  </div>
+                <% } else { %>
+                  <p class="text-sm text-gray mt-1">No students enrolled yet</p>
+                <% } %>
+              </div>
+
+              <div class="mt-1">
+                <a href="/course/<%= course._id %>" class="btn btn-sm btn-outline">View Course Details</a>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="empty-state">
+        <div class="icon">📚</div>
+        <h3>No Courses Yet</h3>
+        <p>Courses will appear here when instructors create them.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

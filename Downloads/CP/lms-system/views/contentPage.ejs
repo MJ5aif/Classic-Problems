@@ -1,0 +1,629 @@
+<%- include('partials/header') %>
+
+<!-- Highlight.js for code blocks -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+  /* Layout */
+  .cp-layout { display:grid; grid-template-columns:260px 1fr; gap:1.5rem; align-items:start; padding:1.5rem 0 3rem; }
+  @media(max-width:768px){ .cp-layout{grid-template-columns:1fr;} .cp-sidebar{order:2;} }
+
+  /* Sidebar */
+  .cp-sidebar { position:sticky; top:70px; }
+  .cp-toc { background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .cp-toc-header { padding:0.85rem 1rem; background:var(--primary); color:#fff; font-weight:700; font-size:0.9rem; }
+  .cp-toc-list { max-height:70vh; overflow-y:auto; }
+  .cp-toc-item { display:flex; align-items:center; gap:0.6rem; padding:0.65rem 1rem; border-bottom:1px solid var(--border); cursor:pointer; text-decoration:none; color:var(--dark); font-size:0.85rem; transition:background .15s; }
+  .cp-toc-item:hover { background:var(--light-gray); }
+  .cp-toc-item.active { background:#EEF2FF; color:var(--primary); font-weight:700; border-left:3px solid var(--primary); }
+  .cp-toc-item .toc-icon { flex-shrink:0; font-size:1rem; width:20px; text-align:center; }
+  .cp-toc-item .toc-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cp-toc-item .toc-score { font-size:0.7rem; font-weight:700; background:#e8f5e9; color:#2e7d32; padding:1px 6px; border-radius:10px; white-space:nowrap; }
+  .cp-toc-item .toc-lock { color:var(--gray); font-size:0.8rem; }
+
+  /* Main content card */
+  .cp-main {}
+  .cp-breadcrumb { font-size:0.82rem; color:var(--gray); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; }
+  .cp-breadcrumb a { color:var(--primary); text-decoration:none; }
+  .cp-breadcrumb a:hover { text-decoration:underline; }
+  .cp-card { background:#fff; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .cp-card-header { padding:1.25rem 1.5rem 1rem; border-bottom:1px solid var(--border); }
+  .cp-card-header h1 { font-size:1.4rem; font-weight:800; color:var(--dark); margin:0 0 0.35rem; }
+  .cp-type-badge { display:inline-flex; align-items:center; gap:4px; font-size:0.72rem; font-weight:700; padding:2px 10px; border-radius:12px; }
+  .cp-card-body { padding:1.5rem; }
+
+  /* Nav prev/next */
+  .cp-nav { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid var(--border); }
+  .cp-nav a { display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; font-weight:600; color:var(--primary); text-decoration:none; padding:0.5rem 0.9rem; border:1px solid var(--border); border-radius:8px; transition:all .15s; max-width:45%; }
+  .cp-nav a:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .cp-nav a span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ── Video ── */
+  .video-wrap { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:10px; background:#000; }
+  .video-wrap iframe, .video-wrap video { position:absolute; top:0; left:0; width:100%; height:100%; border:none; border-radius:10px; }
+
+  /* ── Document ── */
+  .doc-embed { width:100%; height:75vh; border:none; border-radius:10px; }
+  .doc-card { background:#f0f4ff; border-radius:12px; padding:2.5rem; text-align:center; }
+
+  /* ── Announcement ── */
+  .ann-body { background:#fffbeb; border-left:4px solid var(--warning); border-radius:0 10px 10px 0; padding:1.25rem 1.5rem; white-space:pre-wrap; font-size:0.95rem; line-height:1.75; color:var(--dark); }
+
+  /* ── Blog ── */
+  .blog-body { font-size:0.97rem; line-height:1.85; color:var(--dark); white-space:pre-wrap; margin-bottom:1.5rem; }
+  .code-block-wrap { margin:1.25rem 0; border-radius:10px; overflow:hidden; border:1px solid #30363d; }
+  .code-block-meta { background:#161b22; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center; }
+  .code-block-lang { font-size:0.72rem; font-weight:700; color:#8b949e; text-transform:uppercase; letter-spacing:.5px; }
+  .code-block-caption { font-size:0.78rem; color:#8b949e; }
+  .code-block-wrap pre { margin:0; border-radius:0; }
+  .copy-btn { background:none; border:1px solid #30363d; color:#8b949e; font-size:0.72rem; padding:2px 8px; border-radius:4px; cursor:pointer; transition:all .15s; }
+  .copy-btn:hover { background:#30363d; color:#fff; }
+
+  /* ── Quiz ── */
+  .quiz-start-card { text-align:center; padding:2.5rem; background:linear-gradient(135deg,#EEF2FF,#F0FDF4); border-radius:12px; }
+  .quiz-timer-box { background:#fff; border:2px solid var(--danger); border-radius:10px; padding:0.75rem 1.25rem; display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem; }
+  .quiz-timer-val { font-family:monospace; font-size:1.5rem; font-weight:700; color:var(--danger); }
+  .quiz-question { background:#f8f9fa; border:1px solid var(--border); border-radius:10px; padding:1rem 1.25rem; margin-bottom:1rem; }
+  .quiz-question p.qtext { font-weight:700; font-size:0.95rem; margin:0 0 0.75rem; }
+  .quiz-option { display:flex; align-items:center; gap:0.6rem; padding:0.45rem 0.75rem; border:1px solid var(--border); border-radius:7px; margin-bottom:0.4rem; cursor:pointer; background:#fff; transition:all .15s; }
+  .quiz-option:hover { background:#EEF2FF; border-color:var(--primary-light); }
+  .quiz-option input { accent-color:var(--primary); }
+
+  /* Quiz result */
+  .quiz-result-header { text-align:center; padding:1.5rem; border-radius:12px; margin-bottom:1.25rem; }
+  .quiz-ans-row { padding:0.75rem 1rem; border-radius:8px; margin-bottom:0.6rem; border:1px solid transparent; }
+  .quiz-ans-row.correct { background:#e8f5e9; border-color:#a5d6a7; }
+  .quiz-ans-row.wrong   { background:#ffebee; border-color:#ef9a9a; }
+
+  /* Attempts table */
+  .attempts-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+  .attempts-table th { background:var(--light-gray); padding:0.6rem 0.8rem; text-align:left; font-weight:700; border-bottom:2px solid var(--border); }
+  .attempts-table td { padding:0.6rem 0.8rem; border-bottom:1px solid var(--border); }
+  .attempts-table tr:hover td { background:#f8faff; }
+</style>
+
+<div class="container">
+  <%
+    const TYPE_ICON = { video:'🎬', document:'📄', quiz:'❓', announcement:'📢', blog:'✍️' };
+    const TYPE_LABEL = { video:'Video', document:'PDF/Doc', quiz:'Quiz', announcement:'Announcement', blog:'Blog Post' };
+    const TYPE_COLOR = { video:'#fce4ec,#c62828', document:'#e3f2fd,#1565c0', quiz:'#fff8e1,#f57f17', announcement:'#fffde7,#e65100', blog:'#f3e5f5,#6a1b9a' };
+    const [bgColor, textColor] = (TYPE_COLOR[material.type] || '#f5f5f5,#333').split(',');
+  %>
+
+  <div class="cp-breadcrumb">
+    <a href="/courses-page">Courses</a> ›
+    <a href="/course/<%= course._id %>"><%= course.title %></a> ›
+    <span><%= material.title %></span>
+  </div>
+
+  <div class="cp-layout">
+
+    <!-- ── Sidebar ToC ── -->
+    <aside class="cp-sidebar">
+      <div class="cp-toc">
+        <div class="cp-toc-header">📚 <%= course.title %></div>
+        <div class="cp-toc-list">
+          <% course.materials.forEach(function(m, idx) { %>
+            <%
+              const isActive = m._id.toString() === material._id.toString();
+              const icon = TYPE_ICON[m.type] || '📌';
+            %>
+            <a href="/course/<%= course._id %>/content/<%= m._id %>"
+               class="cp-toc-item <%= isActive ? 'active' : '' %>">
+              <span class="toc-icon"><%= icon %></span>
+              <span class="toc-title"><%= idx+1 %>. <%= m.title %></span>
+              <% if (!showContent) { %><span class="toc-lock">🔒</span><% } %>
+            </a>
+          <% }); %>
+        </div>
+      </div>
+
+      <% if (!hasPurchased && !isOwner && !isAdmin) { %>
+        <div style="margin-top:1rem;">
+          <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center;">
+            <p style="font-size:0.85rem;color:var(--gray);margin-bottom:0.75rem;">Purchase this course to access all content</p>
+            <div style="font-size:1.5rem;font-weight:800;color:var(--primary);margin-bottom:0.75rem;">৳<%= course.price %></div>
+            <% if (typeof user !== 'undefined' && user && user.role === 'learner') { %>
+              <button class="btn btn-primary btn-block" onclick="showPinModal('<%= course._id %>','<%= (course.title||'').replace(/'/g,'&#39;') %>',<%= course.price %>)">
+                🛒 Buy Course
+              </button>
+            <% } else if (!user) { %>
+              <a href="/auth/login" class="btn btn-primary btn-block">Login to Buy</a>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    </aside>
+
+    <!-- ── Main Content ── -->
+    <main class="cp-main">
+      <div id="pageAlert"></div>
+      <div class="cp-card">
+        <div class="cp-card-header">
+          <span class="cp-type-badge" style="background:<%= bgColor %>;color:<%= textColor %>;margin-bottom:0.4rem;">
+            <%= TYPE_ICON[material.type] %> <%= TYPE_LABEL[material.type] || material.type %>
+          </span>
+          <h1><%= material.title %></h1>
+        </div>
+
+        <div class="cp-card-body">
+
+          <% if (!showContent) { %>
+            <!-- Locked -->
+            <div style="text-align:center;padding:3rem 1rem;color:var(--gray);">
+              <div style="font-size:3rem;margin-bottom:1rem;">🔒</div>
+              <h3>Content Locked</h3>
+              <p>Purchase this course to access this content.</p>
+              <% if (user && user.role === 'learner') { %>
+                <button class="btn btn-primary mt-2" onclick="showPinModal('<%= course._id %>','<%= (course.title||'').replace(/'/g,'&#39;') %>',<%= course.price %>)">
+                  🛒 Buy Course — ৳<%= course.price %>
+                </button>
+              <% } else if (!user) { %>
+                <a href="/auth/login" class="btn btn-primary mt-2">Login to Purchase</a>
+              <% } %>
+            </div>
+
+          <% } else { %>
+
+            <%# ════════════════ VIDEO ════════════════ %>
+            <% if (material.type === 'video') { %>
+              <% if (material.videoSource === 'youtube' && material.videoUrl) { %>
+                <%
+                  let ytId = '';
+                  if (material.videoUrl.includes('youtu.be/')) {
+                    ytId = material.videoUrl.split('youtu.be/')[1].split('?')[0];
+                  } else if (material.videoUrl.includes('v=')) {
+                    ytId = material.videoUrl.split('v=')[1].split('&')[0];
+                  }
+                %>
+                <% if (ytId) { %>
+                  <div class="video-wrap">
+                    <iframe src="https://www.youtube.com/embed/<%= ytId %>" allowfullscreen loading="lazy"></iframe>
+                  </div>
+                <% } else { %>
+                  <a href="<%= material.videoUrl %>" target="_blank" class="btn btn-primary">🎬 Watch on YouTube</a>
+                <% } %>
+              <% } else if (material.videoSource === 'upload' && material.videoFile) { %>
+                <div class="video-wrap">
+                  <video controls>
+                    <source src="<%= material.videoFile %>" type="video/mp4">
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              <% } else { %>
+                <p class="text-gray">No video source configured.</p>
+              <% } %>
+
+            <%# ════════════════ DOCUMENT ════════════════ %>
+            <% } else if (material.type === 'document') { %>
+              <% if (material.pdfFile) { %>
+                <iframe src="<%= material.pdfFile %>" class="doc-embed" title="<%= material.title %>"></iframe>
+                <div class="mt-2" style="text-align:right;">
+                  <a href="<%= material.pdfFile %>" target="_blank" class="btn btn-sm btn-outline">⬇ Download PDF</a>
+                </div>
+              <% } else if (material.driveLink) { %>
+                <%
+                  // Convert Google Drive share link to embed link
+                  let embedLink = material.driveLink;
+                  if (embedLink.includes('drive.google.com/file/d/')) {
+                    const fileId = embedLink.split('/file/d/')[1].split('/')[0];
+                    embedLink = `https://drive.google.com/file/d/${fileId}/preview`;
+                  } else if (embedLink.includes('drive.google.com/open?id=')) {
+                    const fileId = embedLink.split('id=')[1];
+                    embedLink = `https://drive.google.com/file/d/${fileId}/preview`;
+                  }
+                  const canEmbed = embedLink.includes('drive.google.com') || embedLink.endsWith('.pdf');
+                %>
+                <% if (canEmbed) { %>
+                  <iframe src="<%= embedLink %>" class="doc-embed" title="<%= material.title %>"></iframe>
+                <% } %>
+                <div class="doc-card mt-2">
+                  <p style="font-size:2.5rem;margin:0;">📄</p>
+                  <p class="font-bold mt-1"><%= material.title %></p>
+                  <a href="<%= material.driveLink %>" target="_blank" rel="noopener" class="btn btn-primary mt-1">
+                    📂 Open Document in New Tab
+                  </a>
+                </div>
+              <% } else { %>
+                <p class="text-gray">No document source configured.</p>
+              <% } %>
+
+            <%# ════════════════ ANNOUNCEMENT ════════════════ %>
+            <% } else if (material.type === 'announcement') { %>
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">
+                <span style="font-size:1.5rem;">📢</span>
+                <span class="text-sm text-gray">Posted by <strong><%= course.instructorId ? course.instructorId.name : 'Instructor' %></strong></span>
+              </div>
+              <div class="ann-body"><%= material.content %></div>
+
+            <%# ════════════════ BLOG ════════════════ %>
+            <% } else if (material.type === 'blog') { %>
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1.25rem;">
+                <span style="font-size:1.5rem;">✍️</span>
+                <span class="text-sm text-gray">By <strong><%= course.instructorId ? course.instructorId.name : 'Instructor' %></strong></span>
+              </div>
+              <div class="blog-body"><%= material.content %></div>
+
+              <% if (material.codeBlocks && material.codeBlocks.length > 0) { %>
+                <% material.codeBlocks.forEach(function(cb, ci) { %>
+                  <div class="code-block-wrap">
+                    <div class="code-block-meta">
+                      <span class="code-block-lang"><%= cb.language || 'code' %></span>
+                      <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <% if (cb.caption) { %><span class="code-block-caption"><%= cb.caption %></span><% } %>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                      </div>
+                    </div>
+                    <pre><code class="language-<%= cb.language || 'plaintext' %>"><%= cb.code %></code></pre>
+                  </div>
+                <% }); %>
+              <% } %>
+
+            <%# ════════════════ QUIZ ════════════════ %>
+            <% } else if (material.type === 'quiz') { %>
+
+              <% if (isOwner || isAdmin) { %>
+                <%# Instructor/Admin: show questions with answers %>
+                <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;">
+                  <p class="font-bold mb-2">📋 Quiz Preview — <%= material.quiz && material.quiz.questions ? material.quiz.questions.length : 0 %> Questions · ⏱ <%= material.quiz ? material.quiz.timer : 10 %> min</p>
+                  <% if (material.quiz && material.quiz.questions && material.quiz.questions.length > 0) { %>
+                    <% material.quiz.questions.forEach(function(q, qi) { %>
+                      <div style="margin-bottom:0.9rem;padding:0.9rem;background:#fff;border-radius:8px;border:1px solid var(--border);">
+                        <p class="font-bold text-sm" style="margin:0 0 0.5rem;"><%= qi+1 %>. <%= q.question %></p>
+                        <% q.options.forEach(function(opt, oi) { %>
+                          <div style="padding:0.25rem 0.6rem;border-radius:5px;margin-bottom:0.2rem;
+                                      background:<%= oi === q.correctAnswer ? '#e8f5e9' : '#fafafa' %>;
+                                      border:1px solid <%= oi === q.correctAnswer ? '#a5d6a7' : 'transparent' %>;">
+                            <span style="color:<%= oi === q.correctAnswer ? '#2e7d32' : 'inherit' %>;">
+                              <%= ['A','B','C','D'][oi] %>. <%= opt %><%= oi === q.correctAnswer ? ' ✅' : '' %>
+                            </span>
+                          </div>
+                        <% }); %>
+                      </div>
+                    <% }); %>
+                  <% } else { %>
+                    <p class="text-sm text-gray">No questions added yet.</p>
+                  <% } %>
+                </div>
+
+                <%# Student attempts table %>
+                <% if (quizAttempts !== null) { %>
+                  <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.75rem;">
+                    👥 Student Attempts (<%= quizAttempts.length %>)
+                  </h3>
+                  <% if (quizAttempts.length === 0) { %>
+                    <p class="text-gray text-sm">No students have attempted this quiz yet.</p>
+                  <% } else { %>
+                    <div style="overflow-x:auto;">
+                      <table class="attempts-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Student</th>
+                            <th>Email</th>
+                            <th>Score</th>
+                            <th>%</th>
+                            <th>Time</th>
+                            <th>Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% quizAttempts.forEach(function(att, ai) { %>
+                            <tr>
+                              <td><%= ai+1 %></td>
+                              <td><%= att.learnerId ? att.learnerId.name : '—' %></td>
+                              <td style="color:var(--gray);font-size:0.8rem;"><%= att.learnerId ? att.learnerId.email : '—' %></td>
+                              <td><strong><%= att.score %>/<%= att.totalQuestions %></strong></td>
+                              <td>
+                                <span style="font-weight:700;color:<%= att.percentage >= 80 ? '#2e7d32' : att.percentage >= 50 ? '#f57c00' : '#c62828' %>;">
+                                  <%= att.percentage %>%
+                                </span>
+                              </td>
+                              <td style="font-size:0.8rem;">
+                                <% if (att.timeTaken) { %>
+                                  <%= Math.floor(att.timeTaken/60) %>m <%= att.timeTaken%60 %>s
+                                <% } else { %>—<% } %>
+                                <% if (att.timedOut) { %><span style="color:var(--danger);font-size:0.7rem;"> ⏰</span><% } %>
+                              </td>
+                              <td style="font-size:0.8rem;color:var(--gray);">
+                                <%= new Date(att.createdAt).toLocaleDateString() %>
+                              </td>
+                            </tr>
+                          <% }); %>
+                        </tbody>
+                      </table>
+                    </div>
+                  <% } %>
+                <% } %>
+
+              <% } else { %>
+                <%# Learner quiz view %>
+                <% if (quizAttempt) { %>
+                  <%# Already attempted — show result %>
+                  <%
+                    const pct = quizAttempt.percentage || 0;
+                    const resultColor = pct >= 80 ? '#2e7d32' : pct >= 50 ? '#f57c00' : '#c62828';
+                    const resultEmoji = pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '📚';
+                    const resultMsg   = pct >= 80 ? 'Excellent work!' : pct >= 50 ? 'Good effort!' : 'Keep practicing!';
+                  %>
+                  <div class="quiz-result-header" style="background:linear-gradient(135deg,<%= pct>=80?'#e8f5e9,#c8e6c9':pct>=50?'#fff8e1,#ffe082':'#ffebee,#ffcdd2' %>);">
+                    <div style="font-size:3rem;"><%= resultEmoji %></div>
+                    <h2 style="color:<%= resultColor %>;margin:0.5rem 0;"><%= resultMsg %></h2>
+                    <div style="font-size:2.2rem;font-weight:800;color:<%= resultColor %>;"><%= quizAttempt.score %>/<%= quizAttempt.totalQuestions %></div>
+                    <div style="color:var(--gray);"><%= pct.toFixed(1) %>% · <%= quizAttempt.timedOut ? '⏰ Auto-submitted' : 'Completed' %></div>
+                  </div>
+                  <p class="text-sm text-gray" style="text-align:center;">You have already completed this quiz. Your score is saved.</p>
+
+                <% } else { %>
+                  <%# Not yet attempted — show start screen then quiz form %>
+                  <div id="quizStart">
+                    <div class="quiz-start-card">
+                      <div style="font-size:3rem;margin-bottom:0.5rem;">❓</div>
+                      <h2 style="margin:0.5rem 0;"><%= material.title %></h2>
+                      <div style="display:flex;justify-content:center;gap:1.5rem;margin:1rem 0;flex-wrap:wrap;">
+                        <span class="text-gray text-sm">⏱ <strong><%= material.quiz ? material.quiz.timer : 10 %> minutes</strong></span>
+                        <span class="text-gray text-sm">❓ <strong><%= material.quiz && material.quiz.questions ? material.quiz.questions.length : 0 %> questions</strong></span>
+                      </div>
+                      <p class="text-gray text-sm" style="margin-bottom:1.25rem;">Timer starts when you click <strong>Start Quiz</strong>. Make sure you're ready!</p>
+                      <button class="btn btn-primary btn-lg" onclick="beginQuiz()">▶ Start Quiz</button>
+                    </div>
+                  </div>
+
+                  <div id="quizActive" style="display:none;">
+                    <%
+                      const timerMinutes = material.quiz && material.quiz.timer ? material.quiz.timer : 10;
+                      const totalQs = material.quiz && material.quiz.questions ? material.quiz.questions.length : 0;
+                    %>
+                    <div class="quiz-timer-box">
+                      <span class="font-bold">⏱ Time Remaining</span>
+                      <span class="quiz-timer-val" id="quizTimerDisplay">
+                        <%= String(timerMinutes).padStart(2,'0') %>:00
+                      </span>
+                    </div>
+                    <form id="quizFormEl">
+                      <% if (material.quiz && material.quiz.questions) { %>
+                        <% material.quiz.questions.forEach(function(q, qi) { %>
+                          <div class="quiz-question">
+                            <p class="qtext"><%= qi+1 %>. <%= q.question %></p>
+                            <% q.options.forEach(function(opt, oi) { %>
+                              <label class="quiz-option">
+                                <input type="radio" name="q<%= qi %>" value="<%= oi %>">
+                                <span><%= ['A','B','C','D'][oi] %>. <%= opt %></span>
+                              </label>
+                            <% }); %>
+                          </div>
+                        <% }); %>
+                      <% } %>
+                      <button type="button" class="btn btn-primary" id="submitBtn" onclick="submitQuiz(false)">
+                        📤 Submit Quiz
+                      </button>
+                    </form>
+                  </div>
+
+                  <div id="quizResult" style="display:none;"></div>
+                <% } %>
+              <% } %>
+            <% } %>
+          <% } %>
+
+          <!-- ── Prev / Next navigation ── -->
+          <div class="cp-nav">
+            <% if (prevMat) { %>
+              <a href="/course/<%= course._id %>/content/<%= prevMat._id %>">
+                ← <span><%= prevMat.title %></span>
+              </a>
+            <% } else { %>
+              <a href="/course/<%= course._id %>" style="color:var(--gray);border-color:var(--border);">
+                ← Course Overview
+              </a>
+            <% } %>
+            <% if (nextMat) { %>
+              <a href="/course/<%= course._id %>/content/<%= nextMat._id %>" style="margin-left:auto;">
+                <span><%= nextMat.title %></span> →
+              </a>
+            <% } else { %>
+              <a href="/course/<%= course._id %>" style="margin-left:auto;color:var(--gray);border-color:var(--border);">
+                Course Overview →
+              </a>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<% if (material.type === 'quiz' && !isOwner && !isAdmin && !quizAttempt && showContent) { %>
+<script>
+  const COURSE_ID = '<%= course._id %>';
+  const MAT_ID    = '<%= material._id %>';
+  const TIMER_MIN = <%= material.quiz && material.quiz.timer ? material.quiz.timer : 10 %>;
+  const TOTAL_QS  = <%= material.quiz && material.quiz.questions ? material.quiz.questions.length : 0 %>;
+  let _timerInterval = null;
+  let _timeLeft = TIMER_MIN * 60;
+
+  function beginQuiz() {
+    document.getElementById('quizStart').style.display  = 'none';
+    document.getElementById('quizActive').style.display = 'block';
+    startTimer();
+  }
+
+  function startTimer() {
+    const display = document.getElementById('quizTimerDisplay');
+    function fmt(s) { return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+    display.textContent = fmt(_timeLeft);
+    _timerInterval = setInterval(() => {
+      _timeLeft--;
+      display.textContent = fmt(_timeLeft);
+      if (_timeLeft <= 60) display.style.color = '#ff0000';
+      if (_timeLeft <= 0) { clearInterval(_timerInterval); submitQuiz(true); }
+    }, 1000);
+  }
+
+  function submitQuiz(timedOut) {
+    if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+    const form = document.getElementById('quizFormEl');
+    const answers = [];
+    let allAnswered = true;
+    for (let i = 0; i < TOTAL_QS; i++) {
+      const sel = form.querySelector(`input[name="q${i}"]:checked`);
+      if (sel) { answers.push(parseInt(sel.value)); }
+      else      { answers.push(-1); if (!timedOut) allAnswered = false; }
+    }
+    if (!timedOut && !allAnswered) {
+      if (!confirm('You have unanswered questions. Submit anyway?')) return;
+    }
+    const timeTaken = TIMER_MIN * 60 - _timeLeft;
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
+
+    document.getElementById('quizActive').style.display = 'none';
+    document.getElementById('quizResult').innerHTML = '<div style="text-align:center;padding:2rem;"><span class="spinner"></span> Submitting...</div>';
+    document.getElementById('quizResult').style.display = 'block';
+
+    fetch(`/courses/${COURSE_ID}/quiz/${MAT_ID}/submit`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers, timeTaken: Math.max(0, timeTaken), timedOut: !!timedOut })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        renderResult(data.attempt, data.questions);
+      } else {
+        document.getElementById('pageAlert').innerHTML = `<div class="alert alert-danger">❌ ${data.message}</div>`;
+        document.getElementById('quizResult').style.display = 'none';
+        document.getElementById('quizActive').style.display = 'block';
+        if (btn) { btn.disabled = false; btn.textContent = '📤 Submit Quiz'; }
+      }
+    })
+    .catch(() => {
+      document.getElementById('pageAlert').innerHTML = '<div class="alert alert-danger">Network error. Try again.</div>';
+      document.getElementById('quizResult').style.display = 'none';
+      document.getElementById('quizActive').style.display = 'block';
+      if (btn) { btn.disabled = false; btn.textContent = '📤 Submit Quiz'; }
+    });
+  }
+
+  function renderResult(attempt, questions) {
+    const score = attempt.score, total = attempt.totalQuestions, pct = attempt.percentage;
+    const color = pct >= 80 ? '#2e7d32' : pct >= 50 ? '#f57c00' : '#c62828';
+    const emoji = pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '📚';
+    const msg   = pct >= 80 ? 'Excellent work!' : pct >= 50 ? 'Good effort!' : 'Keep practicing!';
+    const bg    = pct >= 80 ? 'linear-gradient(135deg,#e8f5e9,#c8e6c9)' : pct >= 50 ? 'linear-gradient(135deg,#fff8e1,#ffe082)' : 'linear-gradient(135deg,#ffebee,#ffcdd2)';
+
+    let html = `
+      <div class="quiz-result-header" style="background:${bg};">
+        <div style="font-size:3rem;">${emoji}</div>
+        <h2 style="color:${color};margin:0.5rem 0;">${msg}</h2>
+        <div style="font-size:2.2rem;font-weight:800;color:${color};">${score}/${total}</div>
+        <div style="color:var(--gray);">${pct.toFixed(1)}% ${attempt.timedOut ? '· ⏰ Auto-submitted' : ''}</div>
+      </div>
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.75rem;">📝 Answer Review</h3>
+    `;
+
+    if (questions && questions.length) {
+      questions.forEach((q, i) => {
+        const ua = attempt.answers[i] !== undefined ? attempt.answers[i] : -1;
+        const ok = ua === q.correctAnswer;
+        html += `
+          <div class="quiz-ans-row ${ok ? 'correct' : 'wrong'}">
+            <p style="font-weight:700;font-size:0.9rem;margin:0 0 0.4rem;">${i+1}. ${q.question}</p>
+            <div style="font-size:0.85rem;">
+              <span style="color:${ok ? '#2e7d32' : '#c62828'};">
+                ${ok ? '✅' : '❌'} Your answer: ${ua >= 0 ? ['A','B','C','D'][ua] + '. ' + q.options[ua] : 'Not answered'}
+              </span>
+              ${!ok ? `<br><span style="color:#2e7d32;">✅ Correct: ${['A','B','C','D'][q.correctAnswer]}. ${q.options[q.correctAnswer]}</span>` : ''}
+            </div>
+          </div>`;
+      });
+    }
+
+    document.getElementById('quizResult').innerHTML = html;
+    document.getElementById('quizResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
+<% } %>
+
+<% if (material.type === 'blog') { %>
+<script>
+  document.addEventListener('DOMContentLoaded', () => { hljs.highlightAll(); });
+  function copyCode(btn) {
+    const code = btn.closest('.code-block-wrap').querySelector('code');
+    navigator.clipboard.writeText(code.textContent).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    });
+  }
+</script>
+<% } %>
+
+<% if (!isOwner && !isAdmin && !quizAttempt) { %>
+<!-- PIN Modal -->
+<div id="pinBuyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:2rem;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <h3 style="margin:0 0 0.5rem;">🔐 Enter Bank PIN</h3>
+    <p id="pinModalDesc" style="color:var(--gray);font-size:0.9rem;margin-bottom:1.25rem;"></p>
+    <div class="form-group">
+      <label>4-Digit Bank PIN</label>
+      <input type="password" id="pinInput" class="form-control" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]{4}">
+    </div>
+    <div id="pinModalAlert"></div>
+    <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+      <button class="btn btn-primary" style="flex:1;" onclick="confirmBuyWithPin()">Confirm Purchase</button>
+      <button class="btn" style="flex:1;background:var(--light-gray);" onclick="closePinBuyModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+  let _buyData = {};
+
+  function showPinModal(courseId, title, price) {
+    _buyData = { courseId, title, price };
+    document.getElementById('pinModalDesc').textContent = `Purchase "${title}" for ৳${price}`;
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinModalAlert').innerHTML = '';
+    document.getElementById('pinBuyModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('pinInput').focus(), 100);
+  }
+
+  function closePinBuyModal() {
+    document.getElementById('pinBuyModal').style.display = 'none';
+  }
+
+  async function confirmBuyWithPin() {
+    const pin = document.getElementById('pinInput').value.trim();
+    if (!/^\d{4}$/.test(pin)) {
+      document.getElementById('pinModalAlert').innerHTML = '<div class="alert alert-danger">Enter a valid 4-digit PIN.</div>';
+      return;
+    }
+    try {
+      const resp = await fetch(`/courses/buy/${_buyData.courseId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ pin })
+      });
+      const r = await resp.json();
+      closePinBuyModal();
+      if (r.success) {
+        alert('🎉 Purchased! Redirecting...');
+        window.location.href = '/dashboard';
+      } else {
+        document.getElementById('pageAlert').innerHTML = `<div class="alert alert-danger">❌ ${r.message}</div>`;
+      }
+    } catch(e) {
+      closePinBuyModal();
+      document.getElementById('pageAlert').innerHTML = '<div class="alert alert-danger">Network error.</div>';
+    }
+  }
+
+  document.getElementById('pinBuyModal').addEventListener('click', function(e) {
+    if (e.target === this) closePinBuyModal();
+  });
+</script>
+<% } %>
+
+<%- include('partials/footer') %>

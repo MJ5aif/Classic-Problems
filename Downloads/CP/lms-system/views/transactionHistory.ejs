@@ -1,0 +1,363 @@
+<%- include('partials/header') %>
+
+<style>
+  .txn-page { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+  /* ── Top balance bar ── */
+  .txn-hero {
+    background: linear-gradient(135deg, #0d1b2e 0%, #1a3355 100%);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    color: #fff;
+  }
+  .txn-hero-left h1 { font-size: 1.5rem; margin: 0 0 .3rem; font-weight: 700; }
+  .txn-hero-left p  { margin: 0; opacity: .75; font-size: .95rem; }
+  .txn-balance-big  { font-size: 2.6rem; font-weight: 800; color: #4ade80; line-height:1; }
+  .txn-balance-label{ font-size: .85rem; opacity: .7; margin-top: .25rem; }
+  .txn-back-btn     { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: .6rem 1.4rem; text-decoration: none; font-size: .9rem; transition: background .2s; }
+  .txn-back-btn:hover{ background: rgba(255,255,255,.22); color:#fff; }
+
+  /* ── Summary chips ── */
+  .txn-summary { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+  .txn-chip {
+    flex: 1 1 160px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .txn-chip-icon { font-size: 1.8rem; }
+  .txn-chip-val  { font-size: 1.4rem; font-weight: 700; color: #0d1b2e; }
+  .txn-chip-lbl  { font-size: .8rem; color: #6b7280; }
+
+  /* ── Section headers ── */
+  .txn-section      { margin-bottom: 2.5rem; }
+  .txn-section-head { display: flex; align-items: center; gap: .6rem; margin-bottom: 1rem; }
+  .txn-section-head h2 { font-size: 1.2rem; font-weight: 700; color: #0d1b2e; margin: 0; }
+  .txn-section-head .badge-count { background: #1a73e8; color: #fff; font-size: .75rem; padding: .2rem .6rem; border-radius: 99px; font-weight: 600; }
+
+  /* ── Tables ── */
+  .txn-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 6px rgba(0,0,0,.05); }
+  .txn-table { width:100%; border-collapse: collapse; font-size: .9rem; }
+  .txn-table thead th { background: #f8fafc; color: #374151; font-weight: 600; padding: .85rem 1.1rem; text-align: left; border-bottom: 2px solid #e5e7eb; white-space: nowrap; }
+  .txn-table tbody tr { border-bottom: 1px solid #f0f0f0; transition: background .15s; }
+  .txn-table tbody tr:last-child { border-bottom: none; }
+  .txn-table tbody tr:hover { background: #f9fafb; }
+  .txn-table td { padding: .85rem 1.1rem; vertical-align: middle; color: #374151; }
+
+  /* ── Badges ── */
+  .badge-credit   { background: #dcfce7; color: #15803d; padding: .2rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 600; }
+  .badge-debit    { background: #fee2e2; color: #b91c1c; padding: .2rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 600; }
+  .badge-success  { background: #dcfce7; color: #15803d; padding: .2rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 600; }
+  .badge-pending  { background: #fef9c3; color: #a16207; padding: .2rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 600; }
+  .badge-failed   { background: #fee2e2; color: #b91c1c; padding: .2rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 600; }
+
+  .amount-credit { color: #15803d; font-weight: 700; }
+  .amount-debit  { color: #b91c1c; font-weight: 700; }
+
+  /* running balance column */
+  .bal-col { color: #0d1b2e; font-weight: 600; }
+
+  /* ── Course info cell ── */
+  .course-cell { display:flex; align-items:center; gap:.7rem; }
+  .course-cell img { width:44px; height:30px; border-radius:5px; object-fit:cover; background:#e5e7eb; flex-shrink:0; }
+  .course-cell-title { font-weight:600; color:#0d1b2e; font-size:.88rem; }
+  .course-cell-price { font-size:.8rem; color:#6b7280; }
+
+  /* learner / student cell */
+  .student-cell { display:flex; align-items:center; gap:.6rem; }
+  .student-avatar{ width:34px; height:34px; border-radius:50%; object-fit:cover; background:#e5e7eb; flex-shrink:0; }
+  .student-name  { font-weight:600; font-size:.88rem; color:#0d1b2e; }
+  .student-email { font-size:.78rem; color:#6b7280; }
+
+  .commission-col { color: #6b7280; font-size: .88rem; }
+
+  .no-data { text-align: center; color: #9ca3af; padding: 2.5rem 1rem; font-size: .95rem; }
+  .no-data span { font-size: 2rem; display:block; margin-bottom:.5rem; }
+</style>
+
+<div class="txn-page">
+
+  <!-- ── Hero balance bar ── -->
+  <div class="txn-hero">
+    <div class="txn-hero-left">
+      <h1><% if (user.role === 'instructor') { %>💰 Sales & Transaction History<% } else { %>🧾 Transaction History<% } %></h1>
+      <p>
+        <% if (user.role === 'instructor') { %>Track student purchases, your earnings and admin commission<% } else { %>Your course purchases and bank ledger<% } %>
+      </p>
+    </div>
+    <div style="text-align:right;">
+      <% if (bankAccount) { %>
+      <div class="txn-balance-big">৳<%= bankAccount.balance.toLocaleString() %></div>
+      <div class="txn-balance-label">Current Balance · <% if (bankAccount.accountNumber) { %><%= bankAccount.accountNumber %><% } %></div>
+      <% } else { %>
+      <div style="opacity:.6;">No bank account linked</div>
+      <% } %>
+    </div>
+    <a href="/dashboard" class="txn-back-btn">← Dashboard</a>
+  </div>
+
+  <!-- ── Summary chips ── -->
+  <%
+    const successTxns = transactions.filter(t => t.status === 'success');
+    const totalAmount = successTxns.reduce((s, t) => s + t.amount, 0);
+    const totalMyShare = user.role === 'instructor'
+      ? successTxns.reduce((s, t) => s + (t.instructorPayment ? t.instructorPayment.amount || 0 : 0), 0)
+      : totalAmount;
+    const totalCommission = user.role === 'instructor'
+      ? successTxns.reduce((s, t) => s + (t.lmsCommission || 0), 0) : 0;
+  %>
+  <div class="txn-summary">
+    <div class="txn-chip">
+      <div class="txn-chip-icon">📦</div>
+      <div>
+        <div class="txn-chip-val"><%= transactions.length %></div>
+        <div class="txn-chip-lbl"><% if(user.role==='instructor') { %>Total Sales<% } else { %>Total Purchases<% } %></div>
+      </div>
+    </div>
+    <% if (user.role === 'instructor') { %>
+    <div class="txn-chip">
+      <div class="txn-chip-icon">💵</div>
+      <div>
+        <div class="txn-chip-val">৳<%= totalAmount.toLocaleString() %></div>
+        <div class="txn-chip-lbl">Gross Revenue</div>
+      </div>
+    </div>
+    <div class="txn-chip">
+      <div class="txn-chip-icon">🤝</div>
+      <div>
+        <div class="txn-chip-val">৳<%= totalMyShare.toLocaleString() %></div>
+        <div class="txn-chip-lbl">Your Earnings</div>
+      </div>
+    </div>
+    <div class="txn-chip">
+      <div class="txn-chip-icon">🏛️</div>
+      <div>
+        <div class="txn-chip-val">৳<%= totalCommission.toLocaleString() %></div>
+        <div class="txn-chip-lbl">Admin Commission</div>
+      </div>
+    </div>
+    <% } else { %>
+    <div class="txn-chip">
+      <div class="txn-chip-icon">💸</div>
+      <div>
+        <div class="txn-chip-val">৳<%= totalAmount.toLocaleString() %></div>
+        <div class="txn-chip-lbl">Total Spent</div>
+      </div>
+    </div>
+    <div class="txn-chip">
+      <div class="txn-chip-icon">✅</div>
+      <div>
+        <div class="txn-chip-val"><%= successTxns.length %></div>
+        <div class="txn-chip-lbl">Successful</div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SECTION 1 — Bank Ledger (all credit/debit)
+       ══════════════════════════════════════════ -->
+  <div class="txn-section">
+    <div class="txn-section-head">
+      <h2>🏦 Bank Ledger</h2>
+      <% if (bankAccount && bankAccount.transactions) { %>
+      <span class="badge-count"><%= bankAccount.transactions.length %> entries</span>
+      <% } %>
+    </div>
+
+    <% if (bankAccount && bankAccount.transactions && bankAccount.transactions.length > 0) { %>
+    <%
+      // Sort chronologically and compute running balance
+      const sorted = [...bankAccount.transactions].sort((a,b) => new Date(a.date) - new Date(b.date));
+      let runBal = 0;
+    %>
+    <div class="txn-table-wrap">
+      <table class="txn-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date & Time</th>
+            <th>Description</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Balance After</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% sorted.forEach((t, i) => {
+          if (t.type === 'credit') runBal += t.amount;
+          else runBal -= t.amount;
+        %>
+          <tr>
+            <td style="color:#9ca3af;font-size:.82rem;"><%= i + 1 %></td>
+            <td style="white-space:nowrap;font-size:.85rem;">
+              <%= new Date(t.date).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) %><br>
+              <span style="color:#9ca3af;"><%= new Date(t.date).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) %></span>
+            </td>
+            <td><%= t.description || '—' %></td>
+            <td>
+              <% if (t.type === 'credit') { %>
+                <span class="badge-credit">↑ Credit</span>
+              <% } else { %>
+                <span class="badge-debit">↓ Debit</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (t.type === 'credit') { %>
+                <span class="amount-credit">+৳<%= t.amount.toLocaleString() %></span>
+              <% } else { %>
+                <span class="amount-debit">−৳<%= t.amount.toLocaleString() %></span>
+              <% } %>
+            </td>
+            <td class="bal-col">৳<%= runBal.toLocaleString() %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <div class="no-data"><span>🏦</span> No bank transactions found.</div>
+    <% } %>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       SECTION 2 — Course Transactions Detail
+       ══════════════════════════════════════════ -->
+  <div class="txn-section">
+    <div class="txn-section-head">
+      <% if (user.role === 'instructor') { %>
+      <h2>📊 Sales Detail</h2>
+      <% } else { %>
+      <h2>🛒 Course Purchase Detail</h2>
+      <% } %>
+      <span class="badge-count"><%= transactions.length %> records</span>
+    </div>
+
+    <% if (transactions.length > 0) { %>
+    <div class="txn-table-wrap">
+      <table class="txn-table">
+
+        <!-- ─ INSTRUCTOR columns ─ -->
+        <% if (user.role === 'instructor') { %>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Student</th>
+            <th>Course</th>
+            <th>Course Price</th>
+            <th>Your Share</th>
+            <th>Admin Commission</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% transactions.forEach((t, i) => { %>
+          <tr>
+            <td style="color:#9ca3af;font-size:.82rem;"><%= i + 1 %></td>
+            <td style="white-space:nowrap;font-size:.85rem;">
+              <%= new Date(t.createdAt).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) %><br>
+              <span style="color:#9ca3af;"><%= new Date(t.createdAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) %></span>
+            </td>
+            <td>
+              <% if (t.buyerId) { %>
+              <div class="student-cell">
+                <img class="student-avatar" src="<%= t.buyerId.avatar || '/uploads/profiles/default.png' %>" onerror="this.src='/images/default-avatar.png'" alt="">
+                <div>
+                  <div class="student-name"><%= t.buyerId.name %></div>
+                  <div class="student-email"><%= t.buyerId.email %></div>
+                </div>
+              </div>
+              <% } else { %>—<% } %>
+            </td>
+            <td>
+              <% if (t.courseId) { %>
+              <div class="course-cell">
+                <% if (t.courseId.thumbnail) { %><img src="<%= t.courseId.thumbnail %>" alt=""><% } %>
+                <div>
+                  <div class="course-cell-title"><%= t.courseId.title %></div>
+                </div>
+              </div>
+              <% } else { %>—<% } %>
+            </td>
+            <td><strong>৳<%= t.amount.toLocaleString() %></strong></td>
+            <td class="amount-credit">৳<%= t.instructorPayment ? (t.instructorPayment.amount || 0).toLocaleString() : 0 %></td>
+            <td class="commission-col">৳<%= (t.lmsCommission || 0).toLocaleString() %></td>
+            <td>
+              <span class="badge-<%= t.status %>"><%= t.status.charAt(0).toUpperCase() + t.status.slice(1) %></span>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+
+        <!-- ─ LEARNER columns ─ -->
+        <% } else { %>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Course</th>
+            <th>Instructor</th>
+            <th>Amount Paid</th>
+            <th>Instructor Got</th>
+            <th>Admin Commission</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+        <% transactions.forEach((t, i) => { %>
+          <tr>
+            <td style="color:#9ca3af;font-size:.82rem;"><%= i + 1 %></td>
+            <td style="white-space:nowrap;font-size:.85rem;">
+              <%= new Date(t.createdAt).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) %><br>
+              <span style="color:#9ca3af;"><%= new Date(t.createdAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) %></span>
+            </td>
+            <td>
+              <% if (t.courseId) { %>
+              <div class="course-cell">
+                <% if (t.courseId.thumbnail) { %><img src="<%= t.courseId.thumbnail %>" alt=""><% } %>
+                <div>
+                  <div class="course-cell-title"><%= t.courseId.title %></div>
+                </div>
+              </div>
+              <% } else { %>—<% } %>
+            </td>
+            <td style="font-size:.88rem;color:#374151;">
+              <%= t.instructorPayment && t.instructorPayment.instructorId ? t.instructorPayment.instructorId.name : '—' %>
+            </td>
+            <td><strong class="amount-debit">৳<%= t.amount.toLocaleString() %></strong></td>
+            <td class="commission-col">৳<%= t.instructorPayment ? (t.instructorPayment.amount || 0).toLocaleString() : 0 %></td>
+            <td class="commission-col">৳<%= (t.lmsCommission || 0).toLocaleString() %></td>
+            <td>
+              <span class="badge-<%= t.status %>"><%= t.status.charAt(0).toUpperCase() + t.status.slice(1) %></span>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+        <% } %>
+
+      </table>
+    </div>
+    <% } else { %>
+    <div class="no-data">
+      <span><% if(user.role==='instructor') { %>📊<% } else { %>🛒<% } %></span>
+      No course transactions found yet.
+    </div>
+    <% } %>
+  </div>
+
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,313 @@
+<%- include('partials/header') %>
+
+<style>
+  /* ── Page header ── */
+  .courses-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .courses-page-header h1 { font-size: 1.9rem; font-weight: 800; color: var(--dark); }
+  .courses-page-header p  { color: var(--gray); margin-top: 0.2rem; }
+
+  /* ── Grid ── */
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* ── Card ── */
+  .c-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .c-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+
+  /* ── Thumbnail ── */
+  .c-thumb {
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .c-lessons-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    background: rgba(0,0,0,.4);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 20px;
+  }
+
+  /* ── Body ── */
+  .c-body {
+    padding: 1rem 1.2rem 0.7rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .c-category {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--primary);
+    margin-bottom: 0.35rem;
+  }
+  .c-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 0.4rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.45;
+    min-height: 2.9em;
+  }
+  .c-desc {
+    font-size: 0.83rem;
+    color: var(--gray);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.8rem;
+    flex: 1;
+  }
+  .c-instructor {
+    font-size: 0.8rem;
+    color: var(--gray);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .c-instructor span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+
+  /* ── Footer ── */
+  .c-footer {
+    padding: 0.8rem 1.2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .c-price {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--primary);
+    white-space: nowrap;
+  }
+  .c-actions { display: flex; align-items: center; gap: 0.4rem; }
+
+  /* ── Status chips ── */
+  .chip-own      { font-size:.7rem;font-weight:700;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:2px 9px;border-radius:20px;white-space:nowrap; }
+  .chip-enrolled { font-size:.7rem;font-weight:700;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;padding:2px 9px;border-radius:20px;white-space:nowrap; }
+
+  /* ── Empty state ── */
+  .courses-empty { grid-column:1/-1;text-align:center;padding:4rem 2rem;color:var(--gray); }
+  .courses-empty .icon { font-size:3.5rem;margin-bottom:1rem; }
+  .courses-empty h3 { font-size:1.3rem;font-weight:700;color:var(--dark); }
+</style>
+
+<div class="container" style="padding-top:2rem;padding-bottom:3rem;">
+
+  <div class="courses-page-header">
+    <div>
+      <h1>📚 All Courses</h1>
+      <p>Explore our collection of expert-led courses</p>
+    </div>
+    <% if (typeof user !== 'undefined' && user && user.role === 'instructor') { %>
+      <a href="/dashboard" class="btn btn-primary" style="white-space:nowrap;">My Dashboard</a>
+    <% } %>
+  </div>
+
+  <div id="coursesAlert"></div>
+
+  <div class="courses-grid">
+    <%
+      const GRADIENTS = [
+        'linear-gradient(135deg,#4F46E5,#7C3AED)',
+        'linear-gradient(135deg,#0EA5E9,#06B6D4)',
+        'linear-gradient(135deg,#10B981,#059669)',
+        'linear-gradient(135deg,#F59E0B,#D97706)',
+        'linear-gradient(135deg,#EF4444,#DC2626)',
+        'linear-gradient(135deg,#8B5CF6,#EC4899)',
+        'linear-gradient(135deg,#14B8A6,#2563EB)',
+      ];
+    %>
+
+    <% if (courses && courses.length > 0) { %>
+      <% courses.forEach(function(course, idx) { %>
+        <%
+          const grad = GRADIENTS[idx % GRADIENTS.length];
+
+          const loggedIn    = typeof user !== 'undefined' && user;
+          const isOwnCourse = loggedIn && user.role === 'instructor'
+                              && course.instructorId
+                              && course.instructorId._id.toString() === user._id.toString();
+          const isEnrolled  = loggedIn && user.role === 'learner'
+                              && user.purchasedCourses
+                              && user.purchasedCourses.some(pc =>
+                                  pc.courseId && pc.courseId.toString() === course._id.toString());
+          const isAdmin     = loggedIn && user.role === 'admin';
+          const isLearner   = loggedIn && user.role === 'learner';
+          const safeTitle   = (course.title || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+        %>
+
+        <div class="c-card">
+          <!-- Thumbnail -->
+          <div class="c-thumb" style="background:<%= grad %>;color:#fff;">
+            📖
+            <span class="c-lessons-badge">
+              <%= (course.materials || []).length %> lesson<%= (course.materials || []).length === 1 ? '' : 's' %>
+            </span>
+          </div>
+
+          <!-- Body -->
+          <div class="c-body">
+            <div class="c-category"><%= (course.category || 'General').toUpperCase() %></div>
+            <div class="c-title"><%= course.title %></div>
+            <div class="c-desc"><%= course.description || 'No description available.' %></div>
+            <% if (course.ratingCount > 0) { %>
+              <div style="margin:0.35rem 0 0.1rem;font-size:0.82rem;color:#f59e0b;font-weight:600;">
+                ★ <%= course.avgRating %>
+                <span style="color:var(--gray);font-weight:400;">(<%= course.ratingCount %> review<%= course.ratingCount !== 1 ? 's' : '' %>)</span>
+              </div>
+            <% } %>
+            <div class="c-instructor">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+              <span title="<%= course.instructorId ? course.instructorId.name : 'Unknown' %>">
+                <% if (course.instructorId) { %><a href="/profile/<%= course.instructorId._id %>" style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()"><%= course.instructorId.name %></a><% } else { %>Unknown<% } %>
+              </span>
+              <% if (isOwnCourse) { %><span class="chip-own">Your Course</span><% } %>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="c-footer">
+            <div class="c-price">৳<%= course.price %></div>
+            <div class="c-actions">
+              <a href="/course/<%= course._id %>" class="btn btn-sm btn-outline">View</a>
+
+              <% if (isOwnCourse) { %>
+                <a href="/course-manage/<%= course._id %>" class="btn btn-sm btn-secondary">Manage</a>
+
+              <% } else if (isEnrolled) { %>
+                <span class="chip-enrolled">✅ Enrolled</span>
+
+              <% } else if (isLearner) { %>
+                <button class="btn btn-sm btn-primary"
+                  onclick="showPinModal('<%= course._id %>','<%= safeTitle %>',<%= course.price %>)">
+                  Buy
+                </button>
+
+              <% } else if (!loggedIn) { %>
+                <a href="/auth/login" class="btn btn-sm btn-primary">Buy</a>
+
+              <% } %>
+              <%# admin / other-instructor courses: view only, no action btn %>
+            </div>
+          </div>
+        </div>
+
+      <% }); %>
+    <% } else { %>
+      <div class="courses-empty">
+        <div class="icon">📚</div>
+        <h3>No Courses Available</h3>
+        <p>Check back later for new courses!</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- PIN Modal -->
+<div id="pinBuyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:2rem;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <h3 style="margin:0 0 0.5rem;">🔐 Enter Bank PIN</h3>
+    <p id="pinModalDesc" style="color:var(--gray);font-size:0.9rem;margin-bottom:1.25rem;"></p>
+    <div class="form-group">
+      <label>4-Digit Bank PIN</label>
+      <input type="password" id="pinInput" class="form-control" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]{4}">
+    </div>
+    <div id="pinModalAlert"></div>
+    <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+      <button class="btn btn-primary" style="flex:1;" onclick="confirmBuyWithPin()">Confirm Purchase</button>
+      <button class="btn" style="flex:1;background:var(--light-gray);" onclick="closePinBuyModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let _buyData = {};
+
+  function showPinModal(courseId, title, price) {
+    _buyData = { courseId, title, price };
+    document.getElementById('pinModalDesc').textContent = `Purchase "${title}" for ৳${price}`;
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinModalAlert').innerHTML = '';
+    document.getElementById('pinBuyModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('pinInput').focus(), 100);
+  }
+
+  function closePinBuyModal() {
+    document.getElementById('pinBuyModal').style.display = 'none';
+  }
+
+  async function confirmBuyWithPin() {
+    const pin = document.getElementById('pinInput').value.trim();
+    if (!/^\d{4}$/.test(pin)) {
+      document.getElementById('pinModalAlert').innerHTML = '<div class="alert alert-danger">Enter a valid 4-digit PIN.</div>';
+      return;
+    }
+    const alertDiv = document.getElementById('coursesAlert');
+    try {
+      const resp = await fetch(`/courses/buy/${_buyData.courseId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ pin })
+      });
+      const result = await resp.json();
+      closePinBuyModal();
+      if (result.success) {
+        alertDiv.innerHTML = `<div class="alert alert-success">🎉 ${result.message} Redirecting to dashboard...</div>`;
+        setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">❌ ${result.message}</div>`;
+      }
+    } catch (e) {
+      closePinBuyModal();
+      alertDiv.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.getElementById('pinBuyModal').addEventListener('click', function(e) {
+    if (e.target === this) closePinBuyModal();
+  });
+</script>
+
+<%- include('partials/footer') %>

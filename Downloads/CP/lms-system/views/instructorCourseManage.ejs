@@ -1,0 +1,800 @@
+<%- include('partials/header') %>
+
+<div class="container">
+
+  <!-- Breadcrumb -->
+  <div class="mb-2" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+    <a href="/dashboard" class="text-sm text-gray" style="text-decoration:none;">← Dashboard</a>
+    <span class="text-gray text-sm">/</span>
+    <span class="text-sm font-bold"><%= course.title %></span>
+  </div>
+
+  <!-- Page header -->
+  <div class="dashboard-header" style="margin-bottom:1.5rem;">
+    <div>
+      <h1 style="margin:0;">✏️ Manage Course</h1>
+      <p class="text-gray mt-1"><%= course.title %> &nbsp;·&nbsp; <span class="badge badge-primary"><%= course.category || 'General' %></span></p>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+      <a href="/course/<%= course._id %>" class="btn btn-sm" style="background:var(--light-gray);color:var(--dark);">👁 Preview</a>
+      <a href="/dashboard" class="btn btn-sm btn-outline">← Back</a>
+    </div>
+  </div>
+
+  <div id="manageAlert"></div>
+
+  <div class="grid" style="grid-template-columns: 1fr 340px; gap:1.5rem; align-items:start;">
+
+    <!-- LEFT: Add Material -->
+    <div>
+      <div class="card">
+        <div class="card-header" style="padding:1rem 1.25rem;">
+          <h2 style="margin:0; font-size:1.1rem;">➕ Add New Material</h2>
+        </div>
+        <div class="card-body">
+
+          <!-- Tab buttons -->
+          <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+            <button type="button" class="tab-btn btn btn-sm active-tab"
+                    onclick="switchTab('video', this)">🎬 Class (Video)</button>
+            <button type="button" class="tab-btn btn btn-sm"
+                    onclick="switchTab('document', this)">📄 Course Content (PDF)</button>
+            <button type="button" class="tab-btn btn btn-sm"
+                    onclick="switchTab('quiz', this)">❓ Quiz</button>
+            <button type="button" class="tab-btn btn btn-sm"
+                    onclick="switchTab('announcement', this)">📢 Announcement</button>
+            <button type="button" class="tab-btn btn btn-sm"
+                    onclick="switchTab('blog', this)">✍️ Blog Post</button>
+          </div>
+
+          <!-- ── VIDEO TAB ─────────────────────── -->
+          <div id="tab-video" class="mat-tab">
+            <form onsubmit="addVideoMaterial(event)">
+              <div class="form-group">
+                <label>Title</label>
+                <input type="text" class="form-control" id="vTitle" placeholder="e.g. Lecture 1: Introduction" required>
+              </div>
+              <div class="form-group">
+                <label>Video Source</label>
+                <div style="display:flex; gap:1rem; margin-top:0.25rem;">
+                  <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+                    <input type="radio" name="vsource" value="youtube" checked onchange="toggleVideoSource('youtube')"> YouTube Link
+                  </label>
+                  <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+                    <input type="radio" name="vsource" value="upload" onchange="toggleVideoSource('upload')"> Upload from Device
+                  </label>
+                </div>
+              </div>
+              <div id="yt-input" class="form-group">
+                <label>YouTube URL</label>
+                <input type="url" class="form-control" id="vYtUrl" placeholder="https://youtube.com/watch?v=...">
+              </div>
+              <div id="upload-input" class="form-group" style="display:none;">
+                <label>Video File (mp4, mov, avi — max 500 MB)</label>
+                <input type="file" class="form-control" id="vFile"
+                       accept="video/mp4,video/mov,video/avi,video/mkv,video/webm" style="padding:0.4rem;">
+                <div id="uploadProgress" style="display:none; margin-top:0.5rem;">
+                  <div style="background:#e9ecef; border-radius:8px; height:8px;">
+                    <div id="progressBar" style="background:var(--primary); height:8px; border-radius:8px; width:0%; transition:width 0.3s;"></div>
+                  </div>
+                  <p class="text-sm text-gray mt-1" id="progressText">Uploading...</p>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" id="vBtn">Add Video</button>
+            </form>
+          </div>
+
+          <!-- ── DOCUMENT TAB ───────────────────── -->
+          <div id="tab-document" class="mat-tab" style="display:none;">
+            <form onsubmit="addDocumentMaterial(event)">
+              <div class="form-group">
+                <label>Title</label>
+                <input type="text" class="form-control" id="dTitle" placeholder="e.g. Chapter 1 Notes" required>
+              </div>
+              <div class="form-group">
+                <label>Google Drive Link (PDF)</label>
+                <input type="url" class="form-control" id="dLink" placeholder="https://drive.google.com/file/d/..." required>
+                <p class="text-sm text-gray mt-1">💡 Share your Google Drive file publicly before pasting the link.</p>
+              </div>
+              <button type="submit" class="btn btn-primary">Add Document</button>
+            </form>
+          </div>
+
+          <!-- ── QUIZ TAB ───────────────────────── -->
+          <div id="tab-quiz" class="mat-tab" style="display:none;">
+            <form onsubmit="addQuizMaterial(event)">
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label>Quiz Title</label>
+                  <input type="text" class="form-control" id="qTitle" placeholder="e.g. Module 1 Quiz" required>
+                </div>
+                <div class="form-group">
+                  <label>Timer (minutes, 1–120)</label>
+                  <input type="number" class="form-control" id="qTimer" value="10" min="1" max="120" required>
+                </div>
+              </div>
+              <div id="questionsContainer"></div>
+              <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.5rem; align-items:center;">
+                <button type="button" class="btn btn-sm btn-outline" onclick="addQuestion()">+ Add Question</button>
+                <span class="text-sm text-gray">Max 20 questions · 4 MCQ options each</span>
+              </div>
+              <button type="submit" class="btn btn-success mt-2" id="qBtn">💾 Save Quiz</button>
+            </form>
+          </div>
+
+          <!-- ── ANNOUNCEMENT TAB ───────────────── -->
+          <div id="tab-announcement" class="mat-tab" style="display:none;">
+            <form onsubmit="addAnnouncementMaterial(event)">
+              <div class="form-group">
+                <label>Announcement Title</label>
+                <input type="text" class="form-control" id="anTitle" placeholder="e.g. Upcoming Live Session" required>
+              </div>
+              <div class="form-group">
+                <label>Content</label>
+                <textarea class="form-control" id="anContent" rows="6"
+                          placeholder="Type your announcement text here..." required style="resize:vertical;"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" id="anBtn">📢 Post Announcement</button>
+            </form>
+          </div>
+
+          <!-- ── BLOG TAB ───────────────────────── -->
+          <div id="tab-blog" class="mat-tab" style="display:none;">
+            <form onsubmit="addBlogMaterial(event)">
+              <div class="form-group">
+                <label>Blog Title</label>
+                <input type="text" class="form-control" id="blTitle" placeholder="e.g. Understanding Async/Await" required>
+              </div>
+              <div class="form-group">
+                <label>Blog Body</label>
+                <textarea class="form-control" id="blContent" rows="8"
+                          placeholder="Write your blog post content here..." required style="resize:vertical;"></textarea>
+              </div>
+
+              <!-- Code Blocks section -->
+              <div style="margin-top:0.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                  <label style="margin:0; font-weight:600;">Code Blocks</label>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="addCodeBlock()">+ Add Code Block</button>
+                </div>
+                <div id="codeBlocksContainer" style="display:flex; flex-direction:column; gap:1rem;"></div>
+              </div>
+
+              <button type="submit" class="btn btn-primary mt-2" id="blBtn">✍️ Publish Blog Post</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Current Materials -->
+    <div>
+      <div class="card">
+        <div class="card-header" style="padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center;">
+          <h2 style="margin:0; font-size:1.1rem;">📦 Materials (<%= course.materials ? course.materials.length : 0 %>)</h2>
+        </div>
+        <div class="card-body" style="padding:0.75rem;">
+          <% if (course.materials && course.materials.length > 0) { %>
+            <% course.materials.forEach(function(mat, idx) { %>
+              <div style="padding:0.6rem 0.75rem; display:flex; justify-content:space-between; align-items:center;
+                          background:var(--light-gray); border-radius:8px; margin-bottom:0.4rem;">
+                <div style="flex:1; min-width:0;">
+                  <span class="text-sm">
+                    <% if (mat.type === 'video') { %>🎬<% } else if (mat.type === 'quiz') { %>❓<% } else if (mat.type === 'announcement') { %>📢<% } else if (mat.type === 'blog') { %>✍️<% } else { %>📄<% } %>
+                    <strong><%= mat.title %></strong>
+                  </span>
+                  <br>
+                  <%
+                    const badgeColor = mat.type === 'video' ? 'danger' : mat.type === 'quiz' ? 'warning' : mat.type === 'announcement' ? 'info' : mat.type === 'blog' ? 'success' : 'primary';
+                  %>
+                  <span class="badge badge-<%= badgeColor %>" style="margin-top:0.2rem; font-size:0.7rem;"><%= mat.type %></span>
+                  <% if (mat.type === 'quiz' && mat.quiz) { %>
+                    <span class="text-gray text-sm"> ⏱ <%= mat.quiz.timer %>min · <%= mat.quiz.questions ? mat.quiz.questions.length : 0 %> Qs</span>
+                  <% } %>
+                  <% if (mat.type === 'video' && mat.videoSource) { %>
+                    <span class="text-gray text-sm"> · <%= mat.videoSource === 'youtube' ? '▶ YouTube' : '📁 Uploaded' %></span>
+                  <% } %>
+                </div>
+                <div style="display:flex;gap:0.3rem;flex-shrink:0;margin-left:0.5rem;">
+                  <button class="btn btn-sm" style="background:var(--primary);color:white;padding:0.2rem 0.5rem;font-size:0.75rem;"
+                          onclick="openEditModal('<%= mat._id %>')">✏️</button>
+                  <button class="btn btn-sm" style="background:var(--danger);color:white;padding:0.2rem 0.5rem;font-size:0.75rem;"
+                          onclick="removeMaterial('<%= mat._id %>')">✕</button>
+                </div>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div style="text-align:center; padding:2rem 1rem; color:var(--gray);">
+              <p style="font-size:2rem;">📭</p>
+              <p class="text-sm">No materials yet.<br>Add content using the panel on the left.</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Enrolled Students -->
+      <div class="card mt-2">
+        <div class="card-header" style="padding:1rem 1.25rem;">
+          <h2 style="margin:0; font-size:1.1rem;">👥 Students (<%= course.enrolledStudents ? course.enrolledStudents.length : 0 %>)</h2>
+        </div>
+        <div class="card-body" style="padding:0.75rem; max-height:280px; overflow-y:auto;">
+          <% if (course.enrolledStudents && course.enrolledStudents.length > 0) { %>
+            <% course.enrolledStudents.forEach(function(es, idx) { %>
+              <% if (es.studentId) { %>
+                <div style="display:flex; align-items:center; gap:0.6rem; padding:0.4rem 0; border-bottom:1px solid var(--border);">
+                  <span style="background:var(--primary);color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;flex-shrink:0;"><%= idx+1 %></span>
+                  <div>
+                    <div class="text-sm font-bold"><%= es.studentId.name %></div>
+                    <div class="text-sm text-gray"><%= es.studentId.email %></div>
+                  </div>
+                </div>
+              <% } %>
+            <% }); %>
+          <% } else { %>
+            <p class="text-sm text-gray" style="text-align:center; padding:1rem 0;">No students enrolled yet.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .tab-btn { background: var(--light-gray); color: var(--dark); transition: all 0.2s; }
+  .tab-btn.active-tab { background: var(--primary); color: white; }
+  .mat-tab { padding: 0.25rem 0; }
+  .quiz-question-block {
+    background: #f8f9fa;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .quiz-option-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+  .quiz-option-row input[type="text"] { flex: 1; }
+</style>
+
+<script>
+  const COURSE_ID = '<%= course._id %>';
+  const MATERIALS_DATA = <%- JSON.stringify(course.materials || []) %>;
+
+  // ── Tab switching ──
+  function switchTab(tab, btn) {
+    ['video','document','quiz','announcement','blog'].forEach(t => {
+      const el = document.getElementById('tab-' + t);
+      if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    });
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+    btn.classList.add('active-tab');
+  }
+
+  // ── Video source toggle ──
+  function toggleVideoSource(source) {
+    document.getElementById('yt-input').style.display = source === 'youtube' ? 'block' : 'none';
+    document.getElementById('upload-input').style.display = source === 'upload' ? 'block' : 'none';
+  }
+
+  // ── Add Video ──
+  async function addVideoMaterial(e) {
+    e.preventDefault();
+    const alertDiv = document.getElementById('manageAlert');
+    const btn = document.getElementById('vBtn');
+    const title = document.getElementById('vTitle').value;
+    const sourceEl = document.querySelector('input[name="vsource"]:checked');
+    const source = sourceEl ? sourceEl.value : 'youtube';
+
+    btn.disabled = true; btn.textContent = 'Uploading...';
+
+    try {
+      if (source === 'youtube') {
+        const videoUrl = document.getElementById('vYtUrl').value;
+        const result = await apiCall(`/courses/${COURSE_ID}/material/video`, 'PUT', { title, videoSource: 'youtube', videoUrl });
+        if (result.success) {
+          alertDiv.innerHTML = '<div class="alert alert-success">✅ Video added!</div>';
+          setTimeout(() => window.location.reload(), 900);
+        } else {
+          alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+          btn.disabled = false; btn.textContent = 'Add Video';
+        }
+      } else {
+        const fileInput = document.getElementById('vFile');
+        if (!fileInput.files[0]) {
+          alertDiv.innerHTML = '<div class="alert alert-danger">Please select a video file.</div>';
+          btn.disabled = false; btn.textContent = 'Add Video'; return;
+        }
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('videoSource', 'upload');
+        formData.append('videoFile', fileInput.files[0]);
+
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        progressDiv.style.display = 'block';
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', `/courses/${COURSE_ID}/material/video`, true);
+        const token = document.cookie.match(/(?:^|;\s*)token=([^;]*)/);
+        if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + decodeURIComponent(token[1]));
+
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            const pct = Math.round((ev.loaded / ev.total) * 100);
+            progressBar.style.width = pct + '%';
+            progressText.textContent = `Uploading... ${pct}%`;
+          }
+        };
+        xhr.onload = () => {
+          const result = JSON.parse(xhr.responseText);
+          if (result.success) {
+            alertDiv.innerHTML = '<div class="alert alert-success">✅ Video uploaded!</div>';
+            setTimeout(() => window.location.reload(), 900);
+          } else {
+            alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+            btn.disabled = false; btn.textContent = 'Add Video';
+            progressDiv.style.display = 'none';
+          }
+        };
+        xhr.onerror = () => {
+          alertDiv.innerHTML = '<div class="alert alert-danger">Upload failed.</div>';
+          btn.disabled = false; btn.textContent = 'Add Video'; progressDiv.style.display = 'none';
+        };
+        xhr.send(formData);
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
+      btn.disabled = false; btn.textContent = 'Add Video';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Add Document ──
+  async function addDocumentMaterial(e) {
+    e.preventDefault();
+    const alertDiv = document.getElementById('manageAlert');
+    const title = document.getElementById('dTitle').value;
+    const driveLink = document.getElementById('dLink').value;
+    try {
+      const result = await apiCall(`/courses/${COURSE_ID}/material/document`, 'PUT', { title, driveLink });
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">✅ Document added!</div>';
+        setTimeout(() => window.location.reload(), 900);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error adding document.</div>';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Quiz builder ──
+  let _qCounter = 0;
+
+  function addQuestion() {
+    const container = document.getElementById('questionsContainer');
+    if (container.children.length >= 20) { alert('Maximum 20 questions allowed.'); return; }
+    _qCounter++;
+    const qNum = _qCounter;
+    const currentCount = container.children.length;
+
+    const block = document.createElement('div');
+    block.className = 'quiz-question-block';
+    block.id = `qblock-${qNum}`;
+    block.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+        <strong class="q-label">Question ${currentCount + 1}</strong>
+        <button type="button" class="btn btn-sm" style="background:var(--danger);color:white;padding:0.15rem 0.5rem;font-size:0.75rem;"
+                onclick="removeQuestion(${qNum})">✕</button>
+      </div>
+      <div class="form-group">
+        <input type="text" class="form-control" placeholder="Enter your question here..." id="qtext-${qNum}" required>
+      </div>
+      <p class="text-sm font-bold mb-1">Options — ● mark the correct answer:</p>
+      ${[0,1,2,3].map(i => `
+        <div class="quiz-option-row">
+          <input type="radio" name="correct-${qNum}" value="${i}" ${i===0?'checked':''}>
+          <span class="text-sm" style="min-width:18px;font-weight:600;">${['A','B','C','D'][i]}</span>
+          <input type="text" class="form-control" placeholder="Option ${['A','B','C','D'][i]}"
+                 id="qopt-${qNum}-${i}" required>
+        </div>`).join('')}
+    `;
+    container.appendChild(block);
+  }
+
+  function removeQuestion(qNum) {
+    const block = document.getElementById(`qblock-${qNum}`);
+    if (block) block.remove();
+    const container = document.getElementById('questionsContainer');
+    Array.from(container.children).forEach((b, i) => {
+      const lbl = b.querySelector('.q-label');
+      if (lbl) lbl.textContent = `Question ${i + 1}`;
+    });
+  }
+
+  async function addQuizMaterial(e) {
+    e.preventDefault();
+    const alertDiv = document.getElementById('manageAlert');
+    const btn = document.getElementById('qBtn');
+    const title = document.getElementById('qTitle').value;
+    const timer = document.getElementById('qTimer').value;
+    const container = document.getElementById('questionsContainer');
+    const questions = [];
+    let valid = true;
+
+    Array.from(container.children).forEach(block => {
+      const qNum = block.id.replace('qblock-', '');
+      const questionText = document.getElementById(`qtext-${qNum}`)?.value?.trim();
+      const options = [0,1,2,3].map(i => document.getElementById(`qopt-${qNum}-${i}`)?.value?.trim() || '');
+      const correctRadio = block.querySelector(`input[name="correct-${qNum}"]:checked`);
+      const correctAnswer = correctRadio ? Number(correctRadio.value) : 0;
+
+      if (!questionText || options.some(o => !o)) { valid = false; return; }
+      questions.push({ question: questionText, options, correctAnswer });
+    });
+
+    if (!valid) { alertDiv.innerHTML = '<div class="alert alert-danger">Fill in all questions and options.</div>'; return; }
+    if (questions.length < 1) { alertDiv.innerHTML = '<div class="alert alert-danger">Add at least 1 question.</div>'; return; }
+
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    try {
+      const result = await apiCall(`/courses/${COURSE_ID}/material/quiz`, 'PUT', {
+        title, timer: Number(timer), questions
+      });
+      if (result.success) {
+        alertDiv.innerHTML = `<div class="alert alert-success">✅ Quiz saved with ${questions.length} questions!</div>`;
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = '💾 Save Quiz';
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error saving quiz.</div>';
+      btn.disabled = false; btn.textContent = '💾 Save Quiz';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Add Announcement ──
+  async function addAnnouncementMaterial(e) {
+    e.preventDefault();
+    const alertDiv = document.getElementById('manageAlert');
+    const btn = document.getElementById('anBtn');
+    const title = document.getElementById('anTitle').value.trim();
+    const content = document.getElementById('anContent').value.trim();
+    if (!title || !content) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Title and content are required.</div>';
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Posting...';
+    try {
+      const result = await apiCall(`/courses/${COURSE_ID}/material/announcement`, 'PUT', { title, content });
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">✅ Announcement posted!</div>';
+        document.getElementById('anTitle').value = '';
+        document.getElementById('anContent').value = '';
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = '📢 Post Announcement';
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error posting announcement.</div>';
+      btn.disabled = false; btn.textContent = '📢 Post Announcement';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Add Blog Post ──
+  let _codeBlockCount = 0;
+
+  function addCodeBlock() {
+    _codeBlockCount++;
+    const id = _codeBlockCount;
+    const container = document.getElementById('codeBlocksContainer');
+    const div = document.createElement('div');
+    div.id = `cb-${id}`;
+    div.style.cssText = 'background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:1rem;';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+        <strong style="font-size:0.85rem;">Code Block #${id}</strong>
+        <button type="button" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;padding:2px 8px;"
+                onclick="this.closest('#cb-${id}').remove()">✕ Remove</button>
+      </div>
+      <div class="form-group" style="margin-bottom:0.5rem;">
+        <label style="font-size:0.8rem;">Language</label>
+        <select class="form-control cb-lang" style="height:36px;">
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+          <option value="c">C</option>
+          <option value="html">HTML</option>
+          <option value="css">CSS</option>
+          <option value="sql">SQL</option>
+          <option value="bash">Bash</option>
+          <option value="json">JSON</option>
+          <option value="typescript">TypeScript</option>
+          <option value="plaintext">Plain Text</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0.5rem;">
+        <label style="font-size:0.8rem;">Code</label>
+        <textarea class="form-control cb-code" rows="5" placeholder="Paste your code here..." style="font-family:monospace;font-size:0.82rem;resize:vertical;"></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label style="font-size:0.8rem;">Caption (optional)</label>
+        <input type="text" class="form-control cb-caption" placeholder="Brief description of what this code does">
+      </div>
+    `;
+    container.appendChild(div);
+  }
+
+  async function addBlogMaterial(e) {
+    e.preventDefault();
+    const alertDiv = document.getElementById('manageAlert');
+    const btn = document.getElementById('blBtn');
+    const title = document.getElementById('blTitle').value.trim();
+    const content = document.getElementById('blContent').value.trim();
+    if (!title || !content) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Title and content are required.</div>';
+      return;
+    }
+
+    // Collect code blocks
+    const codeBlocks = [];
+    document.getElementById('codeBlocksContainer').querySelectorAll('[id^="cb-"]').forEach(cbDiv => {
+      const language = cbDiv.querySelector('.cb-lang').value;
+      const code = cbDiv.querySelector('.cb-code').value.trim();
+      const caption = cbDiv.querySelector('.cb-caption').value.trim();
+      if (code) codeBlocks.push({ language, code, caption });
+    });
+
+    btn.disabled = true; btn.textContent = 'Publishing...';
+    try {
+      const result = await apiCall(`/courses/${COURSE_ID}/material/blog`, 'PUT', {
+        title, content, codeBlocks: JSON.stringify(codeBlocks)
+      });
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">✅ Blog post published!</div>';
+        document.getElementById('blTitle').value = '';
+        document.getElementById('blContent').value = '';
+        document.getElementById('codeBlocksContainer').innerHTML = '';
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = '✍️ Publish Blog Post';
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error publishing blog post.</div>';
+      btn.disabled = false; btn.textContent = '✍️ Publish Blog Post';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Remove Material ──
+  async function removeMaterial(materialId) {
+    if (!confirm('Remove this material?')) return;
+    const alertDiv = document.getElementById('manageAlert');
+    try {
+      const result = await apiCall(`/courses/${COURSE_ID}/material/${materialId}`, 'DELETE');
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">✅ Material removed.</div>';
+        setTimeout(() => window.location.reload(), 700);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error removing material.</div>';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Auto-add first question when quiz tab is opened
+  document.querySelector('button[onclick="switchTab(\'quiz\', this)"]').addEventListener('click', function() {
+    const container = document.getElementById('questionsContainer');
+    if (container.children.length === 0) addQuestion();
+  });
+
+  // ── Edit Material Modal ──────────────────────
+  let _editMatId = null;
+  let _editType = null;
+  let _editQCounter = 0;
+
+  function openEditModal(matId) {
+    const mat = MATERIALS_DATA.find(m => String(m._id) === String(matId));
+    if (!mat) { alert('Material data not found. Please reload the page.'); return; }
+    _editMatId = matId;
+    _editType = mat.type;
+    document.getElementById('editModalTitle').textContent =
+      'Edit ' + mat.type.charAt(0).toUpperCase() + mat.type.slice(1) + ' Material';
+    document.getElementById('editTitle').value = mat.title || '';
+    document.getElementById('editAlert').innerHTML = '';
+
+    document.getElementById('editVideoFields').style.display = 'none';
+    document.getElementById('editDocFields').style.display = 'none';
+    document.getElementById('editQuizFields').style.display = 'none';
+
+    if (mat.type === 'video') {
+      document.getElementById('editVideoFields').style.display = 'block';
+      document.getElementById('editVideoUrl').value = mat.videoUrl || '';
+    } else if (mat.type === 'document') {
+      document.getElementById('editDocFields').style.display = 'block';
+      document.getElementById('editDriveLink').value = mat.driveLink || '';
+    } else if (mat.type === 'quiz') {
+      document.getElementById('editQuizFields').style.display = 'block';
+      document.getElementById('editTimer').value = (mat.quiz && mat.quiz.timer) || 10;
+      const container = document.getElementById('editQuestionsContainer');
+      container.innerHTML = '';
+      _editQCounter = 0;
+      const qs = (mat.quiz && mat.quiz.questions) || [];
+      if (qs.length === 0) { buildEditQuizQuestion(null); } else { qs.forEach(q => buildEditQuizQuestion(q)); }
+    }
+
+    document.getElementById('editModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+    document.body.style.overflow = '';
+    _editMatId = null; _editType = null;
+  }
+
+  function buildEditQuizQuestion(existingQ) {
+    const container = document.getElementById('editQuestionsContainer');
+    if (container.children.length >= 20) { alert('Maximum 20 questions allowed.'); return; }
+    _editQCounter++;
+    const qNum = _editQCounter;
+    const currentCount = container.children.length;
+    const block = document.createElement('div');
+    block.className = 'quiz-question-block';
+    block.id = 'eqblock-' + qNum;
+    const safeQ = existingQ ? existingQ.question.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+    const safeOpts = existingQ ? existingQ.options.map(o => o.replace(/"/g, '&quot;').replace(/'/g, '&#39;')) : ['','','',''];
+    block.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+        <strong class="eq-label">Question ${currentCount + 1}</strong>
+        <button type="button" class="btn btn-sm" style="background:var(--danger);color:white;padding:0.15rem 0.5rem;font-size:0.75rem;"
+                onclick="removeEditQuestion(${qNum})">✕</button>
+      </div>
+      <div class="form-group">
+        <input type="text" class="form-control" id="eqtext-${qNum}" placeholder="Enter question..." value="${safeQ}" required>
+      </div>
+      <p class="text-sm font-bold mb-1">Options — ● mark correct answer:</p>
+      ${[0,1,2,3].map(i => `
+        <div class="quiz-option-row">
+          <input type="radio" name="ecorrect-${qNum}" value="${i}" ${existingQ && existingQ.correctAnswer === i ? 'checked' : (!existingQ && i === 0 ? 'checked' : '')}>
+          <span class="text-sm" style="min-width:18px;font-weight:600;">${['A','B','C','D'][i]}</span>
+          <input type="text" class="form-control" id="eqopt-${qNum}-${i}" value="${safeOpts[i]}" placeholder="Option ${['A','B','C','D'][i]}" required>
+        </div>`).join('')}
+    `;
+    container.appendChild(block);
+  }
+
+  function addEditQuestion() { buildEditQuizQuestion(null); }
+
+  function removeEditQuestion(qNum) {
+    const block = document.getElementById('eqblock-' + qNum);
+    if (block) block.remove();
+    const container = document.getElementById('editQuestionsContainer');
+    Array.from(container.children).forEach((b, i) => {
+      const lbl = b.querySelector('.eq-label');
+      if (lbl) lbl.textContent = 'Question ' + (i + 1);
+    });
+  }
+
+  async function saveEditMaterial() {
+    const alertDiv = document.getElementById('editAlert');
+    const btn = document.getElementById('editSaveBtn');
+    const title = document.getElementById('editTitle').value.trim();
+    if (!title) { alertDiv.innerHTML = '<div class="alert alert-danger">Title is required.</div>'; return; }
+
+    const payload = { title };
+    if (_editType === 'video') {
+      payload.videoUrl = document.getElementById('editVideoUrl').value.trim();
+    } else if (_editType === 'document') {
+      payload.driveLink = document.getElementById('editDriveLink').value.trim();
+      if (!payload.driveLink) { alertDiv.innerHTML = '<div class="alert alert-danger">Drive link is required.</div>'; return; }
+    } else if (_editType === 'quiz') {
+      payload.timer = Number(document.getElementById('editTimer').value);
+      const container = document.getElementById('editQuestionsContainer');
+      const questions = [];
+      let valid = true;
+      Array.from(container.children).forEach(block => {
+        const qNum = block.id.replace('eqblock-', '');
+        const questionText = document.getElementById('eqtext-' + qNum)?.value?.trim();
+        const options = [0,1,2,3].map(i => document.getElementById('eqopt-' + qNum + '-' + i)?.value?.trim() || '');
+        const correctRadio = block.querySelector('input[name="ecorrect-' + qNum + '"]:checked');
+        const correctAnswer = correctRadio ? Number(correctRadio.value) : 0;
+        if (!questionText || options.some(o => !o)) { valid = false; return; }
+        questions.push({ question: questionText, options, correctAnswer });
+      });
+      if (!valid) { alertDiv.innerHTML = '<div class="alert alert-danger">Fill in all questions and options.</div>'; return; }
+      if (questions.length < 1) { alertDiv.innerHTML = '<div class="alert alert-danger">At least 1 question required.</div>'; return; }
+      payload.questions = questions;
+    }
+
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      const result = await apiCall(`/courses/${COURSE_ID}/material/${_editMatId}/edit`, 'PUT', payload);
+      if (result.success) {
+        alertDiv.innerHTML = '<div class="alert alert-success">✅ Material updated!</div>';
+        setTimeout(() => { closeEditModal(); window.location.reload(); }, 900);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = '💾 Save Changes';
+      }
+    } catch (err) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error saving changes.</div>';
+      btn.disabled = false; btn.textContent = '💾 Save Changes';
+    }
+  }
+
+  document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+  });
+</script>
+
+<!-- ── Edit Material Modal ── -->
+<div id="editModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; overflow-y:auto;">
+  <div style="background:white; border-radius:12px; padding:2rem; max-width:640px; width:90%; margin:2rem auto; position:relative;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+      <h3 style="margin:0;" id="editModalTitle">Edit Material</h3>
+      <button onclick="closeEditModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--gray); line-height:1;">✕</button>
+    </div>
+    <div id="editAlert"></div>
+
+    <!-- Common: Title -->
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" class="form-control" id="editTitle" required>
+    </div>
+
+    <!-- Video fields -->
+    <div id="editVideoFields" style="display:none;">
+      <div class="form-group">
+        <label>YouTube URL</label>
+        <input type="url" class="form-control" id="editVideoUrl" placeholder="https://youtu.be/...">
+        <p class="text-sm text-gray mt-1">💡 Only YouTube URL can be updated here. Uploaded video files cannot be replaced.</p>
+      </div>
+    </div>
+
+    <!-- Document fields -->
+    <div id="editDocFields" style="display:none;">
+      <div class="form-group">
+        <label>Google Drive Link (PDF)</label>
+        <input type="url" class="form-control" id="editDriveLink" placeholder="https://drive.google.com/file/d/...">
+      </div>
+    </div>
+
+    <!-- Quiz fields -->
+    <div id="editQuizFields" style="display:none;">
+      <div class="form-group">
+        <label>Timer (minutes, 1–120)</label>
+        <input type="number" class="form-control" id="editTimer" min="1" max="120">
+      </div>
+      <p class="font-bold text-sm mb-1">Questions</p>
+      <div id="editQuestionsContainer"></div>
+      <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.5rem; align-items:center;">
+        <button type="button" class="btn btn-sm btn-outline" onclick="addEditQuestion()">+ Add Question</button>
+        <span class="text-sm text-gray">Max 20 questions</span>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:0.75rem; margin-top:1.5rem;">
+      <button class="btn btn-primary" id="editSaveBtn" onclick="saveEditMaterial()">💾 Save Changes</button>
+      <button class="btn" style="background:var(--light-gray);" onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

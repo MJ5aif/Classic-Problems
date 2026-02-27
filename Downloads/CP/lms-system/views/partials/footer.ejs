@@ -1,0 +1,148 @@
+  <footer class="footer" style="background:linear-gradient(135deg,#0D47A1,#1565C0);color:rgba(255,255,255,0.85);border-top:none;margin-top:4rem;padding:2.5rem 2rem;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:0.75rem;">
+      <img src="/images/logo.svg" alt="LMS System" style="height:36px;filter:brightness(0) invert(1);opacity:0.9;">
+    </div>
+    <p style="margin:0;font-size:0.85rem;opacity:0.75;">&copy; <%= new Date().getFullYear() %> LMS System. All rights reserved. &nbsp;|&nbsp; Built with Node.js, Express &amp; MongoDB</p>
+  </footer>
+
+  <script>
+    // ============================================
+    // Sparks Canvas Animation
+    // ============================================
+    (function() {
+      const canvas = document.createElement('canvas');
+      canvas.id = 'sparks-canvas';
+      document.body.insertBefore(canvas, document.body.firstChild);
+      const ctx = canvas.getContext('2d');
+
+      // Themed colors — blues, purples, teals to match site palette
+      const COLORS = [
+        '99,179,237',   // light blue
+        '66,153,225',   // blue
+        '129,140,248',  // indigo
+        '167,139,250',  // purple
+        '56,189,248',   // sky
+        '94,234,212',   // teal
+        '255,255,255',  // white
+        '147,197,253',  // blue-200
+      ];
+
+      const OPT = {
+        amount:       window.innerWidth < 520 ? 1500 : 3000,
+        speed:        0.04,
+        lifetime:     260,
+        direction:    { x: -0.5, y: 1 },
+        size:         [2, 2],
+        maxopacity:   0.55,
+        acceleration: [5, 40]
+      };
+
+      let sparks = [];
+
+      function setSize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', setSize);
+      setSize();
+
+      function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function Spark(x, y) {
+        this.x = x;
+        this.y = y;
+        this.age = 0;
+        this.acceleration = rand(OPT.acceleration[0], OPT.acceleration[1]);
+        this.color = COLORS[rand(0, COLORS.length - 1)];
+        this.opacity = OPT.maxopacity;
+        this.go = function() {
+          this.x += OPT.speed * OPT.direction.x * this.acceleration / 2;
+          this.y += OPT.speed * OPT.direction.y * this.acceleration / 2;
+          this.opacity = OPT.maxopacity - (++this.age / OPT.lifetime);
+        };
+      }
+
+      function addSpark() {
+        sparks.push(new Spark(
+          rand(-200, window.innerWidth  + 200),
+          rand(-200, window.innerHeight + 200)
+        ));
+      }
+
+      function draw() {
+        // clear fully transparent — page content shows through
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = sparks.length - 1; i >= 0; i--) {
+          const s = sparks[i];
+          if (s.opacity <= 0) { sparks.splice(i, 1); continue; }
+          const x = s.x, y = s.y;
+          s.go();
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(${s.color},${Math.max(0, s.opacity)})`;
+          ctx.rect(x, y, OPT.size[0], OPT.size[1]);
+          ctx.fill();
+        }
+        requestAnimationFrame(draw);
+      }
+
+      setInterval(() => {
+        if (sparks.length < OPT.amount) addSpark();
+      }, 1000 / OPT.amount);
+
+      draw();
+    })();
+
+    // ============================================
+    // Global JavaScript for LMS System
+    // ============================================
+
+    // Check if user is logged in (set by server-rendered EJS in header)
+    function isLoggedIn() {
+      return window.__isLoggedIn === true;
+    }
+
+    // API helper function — uses credentials: 'include' to send httpOnly cookie automatically
+    async function apiCall(url, method = 'GET', body = null) {
+      const options = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
+      };
+
+      if (body) {
+        options.body = JSON.stringify(body);
+      }
+
+      const response = await fetch(url, options);
+      return response.json();
+    }
+
+    // Logout function
+    async function logout() {
+      try {
+        await apiCall('/auth/logout');
+      } catch (e) {
+        // Continue even if API fails
+      }
+      window.location.href = '/auth/login';
+    }
+
+    // Show alert message
+    function showAlert(message, type = 'success') {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert alert-${type}`;
+      alertDiv.textContent = message;
+      
+      const container = document.querySelector('.container') || document.querySelector('.container-sm') || document.body;
+      container.insertBefore(alertDiv, container.firstChild);
+      
+      setTimeout(() => alertDiv.remove(), 5000);
+    }
+  </script>
+</body>
+</html>

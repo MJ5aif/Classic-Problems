@@ -1,0 +1,332 @@
+<%- include('partials/header') %>
+
+<style>
+  .cd-layout { display:grid; grid-template-columns:1fr 300px; gap:1.5rem; align-items:start; padding-bottom:3rem; }
+  @media(max-width:768px){ .cd-layout{grid-template-columns:1fr;} }
+
+  /* Hero */
+  .cd-hero { background:linear-gradient(135deg,#1e1b4b,#312e81,#1e3a5f); color:#fff; border-radius:16px; padding:2.5rem; margin-bottom:1.75rem; }
+  .cd-hero h1 { font-size:1.8rem; font-weight:800; margin:0.5rem 0 0.75rem; line-height:1.3; }
+  .cd-hero p  { opacity:.85; margin:0 0 1.25rem; max-width:600px; line-height:1.65; }
+  .cd-hero-meta { display:flex; flex-wrap:wrap; gap:1.25rem; align-items:center; }
+  .cd-hero-meta span { font-size:0.85rem; opacity:.9; }
+
+  /* Content list */
+  .cd-section { background:#fff; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .cd-section-header { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .cd-section-header h2 { margin:0; font-size:1.05rem; font-weight:700; }
+
+  .cd-item { display:flex; align-items:center; gap:1rem; padding:0.9rem 1.25rem; border-bottom:1px solid var(--border); text-decoration:none; color:var(--dark); transition:background .15s; }
+  .cd-item:last-child { border-bottom:none; }
+  .cd-item:hover { background:#f8faff; }
+  .cd-item-num { width:30px; height:30px; border-radius:50%; background:var(--light-gray); color:var(--gray); font-size:0.8rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cd-item-icon { font-size:1.25rem; flex-shrink:0; }
+  .cd-item-info { flex:1; min-width:0; }
+  .cd-item-title { font-weight:600; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cd-item-sub   { font-size:0.78rem; color:var(--gray); margin-top:2px; }
+  .cd-item-right { flex-shrink:0; display:flex; align-items:center; gap:0.5rem; }
+  .cd-item-lock  { color:var(--gray); }
+  .score-pill { font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:12px; }
+  .score-pill.good    { background:#e8f5e9; color:#2e7d32; }
+  .score-pill.medium  { background:#fff8e1; color:#f57f17; }
+  .score-pill.low     { background:#ffebee; color:#c62828; }
+
+  /* Sidebar */
+  .cd-info-card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:1.25rem; margin-bottom:1rem; }
+  .cd-info-row  { display:flex; justify-content:space-between; align-items:center; padding:0.45rem 0; border-bottom:1px solid #f1f5f9; font-size:0.88rem; }
+  .cd-info-row:last-child { border-bottom:none; }
+  .cd-info-row .label { color:var(--gray); }
+
+  .enrolled-list  { max-height:250px; overflow-y:auto; }
+  .enrolled-item  { display:flex; align-items:center; gap:0.75rem; padding:0.5rem 0; border-bottom:1px solid var(--border); }
+  .enrolled-item:last-child { border-bottom:none; }
+  .enrolled-avatar { width:28px; height:28px; border-radius:50%; background:var(--primary-light); color:var(--primary); font-size:0.75rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+</style>
+
+<div class="container" style="padding-top:1.75rem;">
+  <div class="mb-2">
+    <a href="/courses-page" style="color:var(--gray);font-size:0.85rem;text-decoration:none;">← All Courses</a>
+  </div>
+
+  <!-- Hero -->
+  <div class="cd-hero">
+    <span style="background:rgba(255,255,255,.15);color:#fff;font-size:0.72rem;font-weight:700;text-transform:uppercase;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">
+      <%= course.category || 'General' %>
+    </span>
+    <h1><%= course.title %></h1>
+    <p><%= course.description %></p>
+    <div class="cd-hero-meta">
+      <span>👤 <% if (course.instructorId) { %><a href="/profile/<%= course.instructorId._id %>" style="color:inherit;"><%= course.instructorId.name %></a><% } else { %>Unknown<% } %></span>
+      <span>📚 <%= course.materials ? course.materials.length : 0 %> lessons</span>
+      <span>👥 <%= course.enrolledCount || 0 %> enrolled</span>
+      <span style="font-size:1.4rem;font-weight:800;color:#fbbf24;">৳<%= course.price %></span>
+    </div>
+  </div>
+
+  <div id="courseAlert"></div>
+
+  <div class="cd-layout">
+    <!-- Left: Content Table of Contents -->
+    <div>
+      <%
+        const TYPE_ICON  = { video:'🎬', document:'📄', quiz:'❓', announcement:'📢', blog:'✍️' };
+        const TYPE_LABEL = { video:'Video', document:'PDF/Doc', quiz:'Quiz', announcement:'Announcement', blog:'Blog Post' };
+      %>
+
+      <div class="cd-section">
+        <div class="cd-section-header">
+          <h2>📖 Course Content</h2>
+          <% if (isOwner) { %>
+            <a href="/course-manage/<%= course._id %>" class="btn btn-sm btn-secondary">✏️ Manage</a>
+          <% } %>
+        </div>
+
+        <% if (course.materials && course.materials.length > 0) { %>
+          <% course.materials.forEach(function(mat, idx) { %>
+            <%
+              const icon = TYPE_ICON[mat.type] || '📌';
+              const label = TYPE_LABEL[mat.type] || mat.type;
+              let sub = label;
+              if (mat.type === 'video')        sub = mat.videoSource === 'youtube' ? 'YouTube Video' : 'Uploaded Video';
+              if (mat.type === 'document')     sub = mat.pdfFile ? 'PDF Document' : 'External Link';
+              if (mat.type === 'quiz' && mat.quiz) sub = `${mat.quiz.questions ? mat.quiz.questions.length : 0} Questions · ${mat.quiz.timer} min`;
+
+              // quiz score for this learner
+              let scoreData = null;
+              if (mat.type === 'quiz' && typeof quizScores !== 'undefined' && quizScores) {
+                scoreData = quizScores[mat._id.toString()];
+              }
+            %>
+
+            <% if (showContent) { %>
+              <a href="/course/<%= course._id %>/content/<%= mat._id %>" class="cd-item">
+            <% } else { %>
+              <div class="cd-item" style="cursor:default;">
+            <% } %>
+                <span class="cd-item-num"><%= idx+1 %></span>
+                <span class="cd-item-icon"><%= icon %></span>
+                <div class="cd-item-info">
+                  <div class="cd-item-title"><%= mat.title %></div>
+                  <div class="cd-item-sub"><%= sub %></div>
+                </div>
+                <div class="cd-item-right">
+                  <% if (scoreData) { %>
+                    <%
+                      const sc = scoreData.percentage;
+                      const pillClass = sc >= 80 ? 'good' : sc >= 50 ? 'medium' : 'low';
+                    %>
+                    <span class="score-pill <%= pillClass %>"><%= scoreData.score %>/<%= scoreData.totalQuestions %> · <%= sc %>%</span>
+                  <% } %>
+                  <% if (!showContent) { %>
+                    <span class="cd-item-lock">🔒</span>
+                  <% } else { %>
+                    <span style="color:var(--primary);font-size:0.8rem;font-weight:600;">Open →</span>
+                  <% } %>
+                </div>
+            <% if (showContent) { %></a><% } else { %></div><% } %>
+          <% }); %>
+        <% } else { %>
+          <div style="padding:3rem;text-align:center;color:var(--gray);">
+            <div style="font-size:2.5rem;">📝</div>
+            <p class="mt-1">No content yet — check back later.</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Right: Sidebar -->
+    <div>
+      <!-- Purchase / Status box -->
+      <div class="cd-info-card" style="text-align:center;margin-bottom:1rem;">
+        <% if (hasPurchased) { %>
+          <div style="font-size:2rem;margin-bottom:0.5rem;">✅</div>
+          <p class="font-bold" style="color:#2e7d32;margin-bottom:0.75rem;">You're enrolled!</p>
+          <a href="/course/<%= course._id %>/content/<%= course.materials && course.materials.length ? course.materials[0]._id : '' %>"
+             class="btn btn-primary btn-block" style="<%= (!course.materials || !course.materials.length) ? 'pointer-events:none;opacity:.5' : '' %>">
+            ▶ Continue Learning
+          </a>
+        <% } else if (isOwner) { %>
+          <div style="font-size:2rem;margin-bottom:0.5rem;">👨‍🏫</div>
+          <p class="font-bold" style="margin-bottom:0.75rem;">Your Course</p>
+          <a href="/course-manage/<%= course._id %>" class="btn btn-secondary btn-block">✏️ Manage Course</a>
+        <% } else if (isAdmin) { %>
+          <div style="font-size:2rem;margin-bottom:0.5rem;">🔑</div>
+          <p class="font-bold" style="margin-bottom:0.75rem;">Admin View</p>
+        <% } else if (user && user.role === 'learner') { %>
+          <div style="font-size:1.75rem;font-weight:800;color:var(--primary);margin-bottom:0.75rem;">৳<%= course.price %></div>
+          <button class="btn btn-primary btn-block btn-lg" onclick="showPinModal('<%= course._id %>','<%= (course.title||'').replace(/'/g,'&#39;') %>',<%= course.price %>)">
+            🛒 Buy Course
+          </button>
+        <% } else { %>
+          <div style="font-size:1.75rem;font-weight:800;color:var(--primary);margin-bottom:0.75rem;">৳<%= course.price %></div>
+          <a href="/auth/login" class="btn btn-primary btn-block">Login to Purchase</a>
+        <% } %>
+      </div>
+
+      <!-- Course info -->
+      <div class="cd-info-card">
+        <div class="cd-info-row"><span class="label">Category</span><span><%= course.category || 'General' %></span></div>
+        <div class="cd-info-row"><span class="label">Lessons</span><span><%= course.materials ? course.materials.length : 0 %></span></div>
+        <div class="cd-info-row"><span class="label">Enrolled</span><span><%= course.enrolledCount || 0 %></span></div>
+        <div class="cd-info-row"><span class="label">Instructor</span><span><% if (course.instructorId) { %><a href="/profile/<%= course.instructorId._id %>" style="color:var(--primary);"><%= course.instructorId.name %></a><% } else { %>—<% } %></span></div>
+        <div class="cd-info-row">
+          <span class="label">Rating</span>
+          <span style="color:#f59e0b;font-weight:600;">
+            <% if (course.ratingCount > 0) { %>
+              ★ <%= course.avgRating %> <span style="color:var(--gray);font-weight:400;font-size:0.82rem;">(<%= course.ratingCount %> review<%= course.ratingCount !== 1 ? 's' : '' %>)</span>
+            <% } else { %>
+              <span style="color:var(--gray);font-weight:400;">No ratings yet</span>
+            <% } %>
+          </span>
+        </div>
+      </div>
+
+      <!-- Rate this course (enrolled learners only) -->
+      <% if (hasPurchased) {
+        const myRating = course.ratings ? course.ratings.find(r => user && r.userId && r.userId.toString() === user._id.toString()) : null;
+      %>
+      <div class="cd-info-card" style="margin-top:0.75rem;">
+        <h4 style="margin:0 0 0.75rem;font-size:0.95rem;font-weight:700;">⭐ Rate This Course</h4>
+        <div id="rateAlert"></div>
+        <div style="display:flex;gap:0.4rem;margin-bottom:0.6rem;" id="starRow">
+          <% for (let s = 1; s <= 5; s++) { %>
+            <span class="star-btn" data-val="<%= s %>"
+              style="font-size:1.6rem;cursor:pointer;color:<%= myRating && myRating.value >= s ? '#f59e0b' : '#d1d5db' %>;"
+              onclick="selectStar(<%= s %>)">★</span>
+          <% } %>
+        </div>
+        <textarea id="rateReview" class="form-control" rows="2"
+          style="width:100%;font-size:0.85rem;margin-bottom:0.6rem;box-sizing:border-box;"
+          placeholder="Optional review…"><%= myRating ? myRating.review : '' %></textarea>
+        <button class="btn btn-sm btn-primary btn-block" onclick="submitRating('<%= course._id %>')">
+          <%= myRating ? '✏️ Update Rating' : '⭐ Submit Rating' %>
+        </button>
+      </div>
+      <% } %>
+
+      <!-- Enrolled students (instructor + admin) -->
+      <% if ((isOwner || isAdmin) && course.enrolledStudents && course.enrolledStudents.length > 0) { %>
+        <div class="cd-info-card">
+          <h3 style="font-size:0.95rem;font-weight:700;margin:0 0 0.75rem;">👥 Students (<%= course.enrolledStudents.length %>)</h3>
+          <div class="enrolled-list">
+            <% course.enrolledStudents.forEach(function(es, i) { %>
+              <% if (es.studentId) { %>
+                <div class="enrolled-item">
+                  <div class="enrolled-avatar"><%= es.studentId.name.charAt(0).toUpperCase() %></div>
+                  <div>
+                    <div style="font-size:0.85rem;font-weight:600;"><%= es.studentId.name %></div>
+                    <div style="font-size:0.75rem;color:var(--gray);"><%= es.studentId.email %></div>
+                  </div>
+                </div>
+              <% } %>
+            <% }); %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- PIN Modal -->
+<div id="pinBuyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:2rem;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <h3 style="margin:0 0 0.5rem;">🔐 Enter Bank PIN</h3>
+    <p id="pinModalDesc" style="color:var(--gray);font-size:0.9rem;margin-bottom:1.25rem;"></p>
+    <div class="form-group">
+      <label>4-Digit Bank PIN</label>
+      <input type="password" id="pinInput" class="form-control" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]{4}">
+    </div>
+    <div id="pinModalAlert"></div>
+    <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+      <button class="btn btn-primary" style="flex:1;" onclick="confirmBuyWithPin()">Confirm Purchase</button>
+      <button class="btn" style="flex:1;background:var(--light-gray);" onclick="closePinBuyModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let _selectedStar = 0;
+
+  function selectStar(val) {
+    _selectedStar = val;
+    document.querySelectorAll('#starRow .star-btn').forEach((el, i) => {
+      el.style.color = i < val ? '#f59e0b' : '#d1d5db';
+    });
+  }
+
+  async function submitRating(courseId) {
+    const alertDiv = document.getElementById('rateAlert');
+    if (!_selectedStar) {
+      alertDiv.innerHTML = '<div class="alert alert-danger" style="padding:.4rem .75rem;font-size:.85rem;">Please select a star rating.</div>';
+      return;
+    }
+    const review = document.getElementById('rateReview').value;
+    try {
+      const resp = await fetch(`/courses/${courseId}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ value: _selectedStar, review })
+      });
+      const r = await resp.json();
+      if (r.success) {
+        alertDiv.innerHTML = `<div class="alert alert-success" style="padding:.4rem .75rem;font-size:.85rem;">⭐ ${r.message} Avg: ${r.avgRating} (${r.ratingCount} reviews)</div>`;
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger" style="padding:.4rem .75rem;font-size:.85rem;">${r.message}</div>`;
+      }
+    } catch(e) {
+      alertDiv.innerHTML = '<div class="alert alert-danger" style="padding:.4rem .75rem;font-size:.85rem;">Network error.</div>';
+    }
+  }
+
+  let _buyData = {};
+
+  function showPinModal(courseId, title, price) {
+    _buyData = { courseId, title, price };
+    document.getElementById('pinModalDesc').textContent = `Purchase "${title}" for ৳${price}`;
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinModalAlert').innerHTML = '';
+    document.getElementById('pinBuyModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('pinInput').focus(), 100);
+  }
+
+  function closePinBuyModal() {
+    document.getElementById('pinBuyModal').style.display = 'none';
+  }
+
+  async function confirmBuyWithPin() {
+    const pin = document.getElementById('pinInput').value.trim();
+    if (!/^\d{4}$/.test(pin)) {
+      document.getElementById('pinModalAlert').innerHTML = '<div class="alert alert-danger">Enter a valid 4-digit PIN.</div>';
+      return;
+    }
+    const alertDiv = document.getElementById('courseAlert');
+    try {
+      const resp = await fetch(`/courses/buy/${_buyData.courseId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ pin })
+      });
+      const r = await resp.json();
+      closePinBuyModal();
+      if (r.success) {
+        alertDiv.innerHTML = `<div class="alert alert-success">🎉 ${r.message} Redirecting...</div>`;
+        setTimeout(() => window.location.href = '/dashboard', 1500);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">❌ ${r.message}</div>`;
+      }
+    } catch(e) {
+      closePinBuyModal();
+      alertDiv.innerHTML = '<div class="alert alert-danger">Network error.</div>';
+    }
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('pinBuyModal').addEventListener('click', function(e) {
+    if (e.target === this) closePinBuyModal();
+  });
+</script>
+
+<%- include('partials/footer') %>

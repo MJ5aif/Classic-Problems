@@ -1,0 +1,75 @@
+<%- include('partials/header') %>
+
+<!-- Certificate Page -->
+<div class="container">
+  <div class="certificate-container">
+    <div class="certificate" id="certificatePrint">
+      <h1>🏆 Certificate of Completion</h1>
+      <p class="cert-subtitle">This is to certify that</p>
+      
+      <div class="cert-name">
+        <%= certificate.learnerId ? certificate.learnerId.name : 'Student' %>
+      </div>
+
+      <p class="cert-subtitle">has successfully completed the course</p>
+      
+      <div class="cert-course">
+        "<%= certificate.courseId ? certificate.courseId.title : 'Course' %>"
+      </div>
+
+      <p class="cert-subtitle" style="max-width: 500px; margin: 1rem auto;">
+        <%= certificate.courseId ? certificate.courseId.description : '' %>
+      </p>
+
+      <div class="cert-date">
+        📅 Issue Date: <%= new Date(certificate.issueDate).toLocaleDateString('en-US', { 
+          year: 'numeric', month: 'long', day: 'numeric' 
+        }) %>
+      </div>
+
+      <div class="cert-number">
+        Certificate ID: <%= certificate.certificateNumber %>
+      </div>
+
+      <div style="margin-top: 2rem; display: flex; justify-content: space-around;">
+        <div>
+          <div style="border-top: 2px solid var(--dark); width: 200px; padding-top: 0.5rem;">
+            <strong>LMS Organization</strong>
+            <br>
+            <span class="text-sm text-gray">Authorized Signatory</span>
+          </div>
+        </div>
+        <div>
+          <div style="border-top: 2px solid var(--dark); width: 200px; padding-top: 0.5rem;">
+            <strong>Course Instructor</strong>
+            <br>
+            <span class="text-sm text-gray">Instructor</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-3">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Print Certificate</button>
+      <a href="/dashboard" class="btn btn-outline" style="margin-left: 1rem;">Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<style>
+  @media print {
+    .navbar, .footer, .btn, .navbar-links {
+      display: none !important;
+    }
+    .certificate-container {
+      margin: 0;
+      padding: 1rem;
+    }
+    .certificate {
+      border: 3px solid #4F46E5;
+      box-shadow: none;
+    }
+  }
+</style>
+
+<%- include('partials/footer') %>

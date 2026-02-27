@@ -1,0 +1,37 @@
+{
+  "name": "lms-system",
+  "version": "1.0.0",
+  "description": "Learning Management System - Full Stack Web Application with simulated banking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node seed/seed.js"
+  },
+  "keywords": [
+    "lms",
+    "education",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "LMS Team",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.3.1",
+    "ejs": "^4.0.1",
+    "express": "^4.22.1",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.2.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

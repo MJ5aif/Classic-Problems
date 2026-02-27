@@ -1,0 +1,198 @@
+<%- include('partials/header') %>
+
+<!-- Instructor Dashboard -->
+<div class="container">
+  <div class="dashboard-header">
+    <div>
+      <h1>👨‍🏫 Instructor Dashboard</h1>
+      <p class="text-gray">Welcome, <%= user.name %></p>
+    </div>
+  </div>
+
+  <div id="instrAlert"></div>
+
+  <!-- Stats -->
+  <div class="grid grid-3 mb-3">
+    <div class="balance-card">
+      <div class="balance-label">Bank Balance</div>
+      <div class="balance-amount">৳<%= bankBalance.toLocaleString() %></div>
+      <div class="balance-account">Account: <%= user.bankAccountNumber || 'Not Set' %></div>
+      <a href="/transaction-history" style="display:inline-block;margin-top:.75rem;font-size:.82rem;background:rgba(255,255,255,.18);color:#fff;padding:.3rem .9rem;border-radius:6px;text-decoration:none;">💰 Transaction History</a>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number"><%= courses.length %></div>
+      <div class="stat-label">Courses Created</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number"><%= courses.reduce((sum, c) => sum + (c.enrolledCount || 0), 0) %></div>
+      <div class="stat-label">Total Enrollments</div>
+    </div>
+  </div>
+
+  <!-- Certificate Applications -->
+  <% if (pendingCerts && pendingCerts.length > 0) { %>
+  <div class="dashboard-section">
+    <h2>🎓 Certificate Applications <span class="badge badge-danger" style="font-size:0.85rem;vertical-align:middle;"><%= pendingCerts.length %> Pending</span></h2>
+    <div id="certAlert"></div>
+    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+      <% pendingCerts.forEach(function(cert) { %>
+        <div class="card" style="border-left:4px solid var(--warning,#f59e0b);">
+          <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
+            <div>
+              <p style="margin:0;font-weight:600;"><%= cert.learnerId ? cert.learnerId.name : 'Unknown' %></p>
+              <p style="margin:0;font-size:0.83rem;color:var(--gray);"><%= cert.learnerId ? cert.learnerId.email : '' %></p>
+              <p style="margin:0.25rem 0 0;font-size:0.85rem;">Course: <strong><%= cert.courseId ? cert.courseId.title : '—' %></strong></p>
+              <p style="margin:0;font-size:0.78rem;color:var(--gray);">Applied: <%= new Date(cert.appliedAt).toLocaleDateString() %></p>
+            </div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="btn btn-success btn-sm" onclick="reviewCert('<%= cert._id %>','accept')">✅ Accept</button>
+              <button class="btn btn-danger btn-sm" onclick="reviewCert('<%= cert._id %>','reject')">❌ Reject</button>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Create New Course -->
+  <div class="dashboard-section">
+    <h2>➕ Upload New Course</h2>
+    <div class="card">
+      <div class="card-body">
+        <form id="courseForm" onsubmit="createCourse(event)">
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label for="courseTitle">Course Title</label>
+              <input type="text" id="courseTitle" class="form-control" placeholder="e.g. Web Development Bootcamp" required>
+            </div>
+            <div class="form-group">
+              <label for="coursePrice">Price (৳)</label>
+              <input type="number" id="coursePrice" class="form-control" placeholder="e.g. 99" min="1" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="courseCategory">Category</label>
+            <select id="courseCategory" class="form-control">
+              <option value="Web Development">Web Development</option>
+              <option value="Data Science">Data Science</option>
+              <option value="Mobile Development">Mobile Development</option>
+              <option value="Cybersecurity">Cybersecurity</option>
+              <option value="Cloud Computing">Cloud Computing</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="courseDesc">Description</label>
+            <textarea id="courseDesc" class="form-control" rows="3" placeholder="Describe your course..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" id="createBtn">Upload Course (+৳500 bonus)</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Courses -->
+  <div class="dashboard-section">
+    <h2>📚 My Courses</h2>
+
+    <% if (courses && courses.length > 0) { %>
+      <div class="grid grid-2" style="gap:1.25rem;">
+      <% courses.forEach(function(course) { %>
+        <div class="card">
+          <div class="card-body">
+            <!-- Course header -->
+            <div class="flex-between" style="flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
+              <div style="flex:1;">
+                <span class="badge badge-primary mb-1"><%= course.category || 'General' %></span>
+                <h3 style="margin:0.3rem 0;"><%= course.title %></h3>
+                <p class="text-sm text-gray"><%= course.description ? course.description.substring(0, 100) + '...' : '' %></p>
+              </div>
+              <div class="text-right">
+                <span class="course-price">৳<%= course.price %></span>
+              </div>
+            </div>
+
+            <!-- Quick stats -->
+            <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem;">
+              <span class="badge badge-success">👥 <%= course.enrolledCount || 0 %> enrolled</span>
+              <span class="badge badge-primary">📦 <%= course.materials ? course.materials.length : 0 %> materials</span>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <a href="/course-manage/<%= course._id %>" class="btn btn-primary btn-sm">✏️ Manage Content</a>
+              <a href="/course/<%= course._id %>" class="btn btn-sm" style="background:var(--light-gray);color:var(--dark);">👁 Preview</a>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+      </div>
+    <% } else { %>
+      <div class="empty-state">
+        <div class="icon">📝</div>
+        <h3>No Courses Yet</h3>
+        <p>Create your first course above!</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  // ── Review Certificate ──
+  async function reviewCert(certId, action) {
+    const alertDiv = document.getElementById('certAlert');
+    let reason = '';
+    if (action === 'reject') {
+      reason = prompt('Reason for rejection (optional):') || '';
+    }
+    try {
+      const resp = await fetch(`/courses/certificate/${certId}/review`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action, reason })
+      });
+      const r = await resp.json();
+      if (r.success) {
+        alertDiv.innerHTML = `<div class="alert alert-success">✅ ${r.message}</div>`;
+        setTimeout(() => window.location.reload(), 1200);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">❌ ${r.message}</div>`;
+      }
+    } catch(e) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Network error.</div>';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Create Course ──
+  async function createCourse(e) {
+    e.preventDefault();
+    const btn = document.getElementById('createBtn');
+    const alertDiv = document.getElementById('instrAlert');
+    const data = {
+      title: document.getElementById('courseTitle').value,
+      description: document.getElementById('courseDesc').value,
+      price: Number(document.getElementById('coursePrice').value),
+      category: document.getElementById('courseCategory').value
+    };
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creating...';
+    try {
+      const result = await apiCall('/courses', 'POST', data);
+      if (result.success) {
+        alertDiv.innerHTML = `<div class="alert alert-success">🎉 ${result.message}</div>`;
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+        btn.disabled = false; btn.textContent = 'Upload Course (+৳500 bonus)';
+      }
+    } catch (error) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Error creating course.</div>';
+      btn.disabled = false; btn.textContent = 'Upload Course (+৳500 bonus)';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+<%- include('partials/footer') %>

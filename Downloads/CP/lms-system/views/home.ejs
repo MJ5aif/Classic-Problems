@@ -1,0 +1,110 @@
+<%- include('partials/header') %>
+
+<!-- Home Page -->
+<div class="hero">
+  <img src="/images/logo.svg" alt="LMS System" class="hero-logo">
+  <h1>Your Gateway to Expert Learning</h1>
+  <p>Discover amazing courses from expert instructors. Learn at your own pace and earn verified certificates upon completion.</p>
+  <div class="hero-btns">
+    <a href="/courses-page" class="btn-hero-white">📚 Browse Courses</a>
+    <% if (typeof user !== 'undefined' && user) { %>
+      <a href="/dashboard" class="btn-hero-outline">📈 Go to Dashboard</a>
+    <% } else { %>
+      <a href="/auth/register" class="btn-hero-outline">✨ Get Started Free</a>
+    <% } %>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Features Section -->
+  <div class="dashboard-section">
+    <h2 style="text-align: center; border: none; font-size: 1.5rem;">Why Learn With Us?</h2>
+    <div class="grid grid-3 mt-2">
+      <div class="stat-card" style="border-top:4px solid #1565C0;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎓</div>
+        <div class="stat-label" style="font-size: 1.05rem; color: var(--dark); font-weight: 700;">Expert Instructors</div>
+        <p class="text-sm text-gray mt-1">Learn from experienced professionals with real industry knowledge</p>
+      </div>
+      <div class="stat-card" style="border-top:4px solid #1E88E5;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📜</div>
+        <div class="stat-label" style="font-size: 1.05rem; color: var(--dark); font-weight: 700;">Verified Certificates</div>
+        <p class="text-sm text-gray mt-1">Earn instructor-approved certificates upon course completion</p>
+      </div>
+      <div class="stat-card" style="border-top:4px solid #42A5F5;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🏦</div>
+        <div class="stat-label" style="font-size: 1.05rem; color: var(--dark); font-weight: 700;">Secure Payments</div>
+        <p class="text-sm text-gray mt-1">Safe bank-verified transactions for all course purchases</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Available Courses -->
+  <div class="dashboard-section">
+    <h2 style="text-align: center; border: none; font-size: 1.5rem;">⭐ Featured Courses</h2>
+    
+    <% if (courses && courses.length > 0) { %>
+      <div class="grid grid-3 mt-2">
+        <% courses.forEach(function(course) { %>
+          <a href="/course/<%= course._id %>" style="text-decoration:none;color:inherit;">
+          <div class="course-card">
+            <div class="course-card-image" style="background:linear-gradient(135deg,#1565C0,#42A5F5);">🎓</div>
+            <div class="course-card-body">
+              <h3><%= course.title %></h3>
+              <p><%= course.description ? course.description.substring(0, 90) + '...' : '' %></p>
+              <% if (course.ratingCount > 0) { %>
+                <div style="font-size:0.82rem;color:#f59e0b;font-weight:600;margin-bottom:0.4rem;">
+                  ★ <%= course.avgRating %> <span style="color:var(--gray);font-weight:400;">(<%= course.ratingCount %>)</span>
+                </div>
+              <% } %>
+              <div class="course-card-meta">
+                <span class="course-price">৳<%= course.price %></span>
+                <span class="course-instructor">
+                  by <% if (course.instructorId) { %><a href="/profile/<%= course.instructorId._id %>" style="color:var(--primary);text-decoration:none;" onclick="event.stopPropagation()"><%= course.instructorId.name %></a><% } else { %>Unknown<% } %>
+                </span>
+              </div>
+            </div>
+            <div class="course-card-footer">
+              <span class="badge badge-primary"><%= course.category || 'General' %></span>
+              <span class="text-sm text-gray"><%= course.enrolledCount || 0 %> enrolled</span>
+            </div>
+          </div>
+          </a>
+        <% }); %>
+      </div>
+      <div style="text-align:center;margin-top:2rem;">
+        <a href="/courses-page" class="btn btn-primary btn-lg">View All Courses →</a>
+      </div>
+    <% } else { %>
+      <div class="empty-state">
+        <div class="icon">📚</div>
+        <h3>Courses Coming Soon</h3>
+        <p>Our instructors are preparing amazing content for you!</p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- How It Works -->
+  <div class="dashboard-section">
+    <h2 style="text-align: center; border: none; font-size: 1.5rem;">How It Works</h2>
+    <div class="grid grid-4 mt-2">
+      <div class="stat-card">
+        <div class="stat-number" style="font-size: 1.5rem;">1️⃣</div>
+        <div class="stat-label">Register & Login</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="font-size: 1.5rem;">2️⃣</div>
+        <div class="stat-label">Set Up Bank Account</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="font-size: 1.5rem;">3️⃣</div>
+        <div class="stat-label">Purchase & Learn</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="font-size: 1.5rem;">4️⃣</div>
+        <div class="stat-label">Get Certificate</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,278 @@
+{
+  "info": {
+    "name": "LMS System API Collection",
+    "description": "Complete API collection for the LMS (Learning Management System) with simulated banking.\n\nFlow:\n1. Register/Login\n2. Set bank account\n3. Browse courses\n4. Buy course\n5. Complete course\n6. Get certificate",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "courseId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "Register Learner",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Learner\",\n  \"email\": \"learner@test.com\",\n  \"password\": \"learner123\",\n  \"role\": \"learner\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@lms.com\",\n  \"password\": \"admin123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login Instructor",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.smith@lms.com\",\n  \"password\": \"instructor123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login Learner",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"learner@test.com\",\n  \"password\": \"learner123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/logout",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏦 Bank",
+      "item": [
+        {
+          "name": "Create Bank Account",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/bank/create-account",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountNumber\": \"3000000001\",\n  \"secretKey\": \"mySecret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Transfer Funds",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/bank/transfer",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccountNumber\": \"3000000001\",\n  \"fromSecret\": \"mySecret123\",\n  \"toAccountNumber\": \"1000000001\",\n  \"amount\": 100,\n  \"description\": \"Test transfer\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Balance",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/bank/my-balance",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get Balance by Account Number",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/bank/balance/1000000001",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "📚 Courses",
+      "item": [
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/courses"
+          }
+        },
+        {
+          "name": "Get Course by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/courses/{{courseId}}"
+          }
+        },
+        {
+          "name": "Buy Course (Learner)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/courses/buy/{{courseId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get My Courses (Learner)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/courses/my-courses",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Complete Course (Learner)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/courses/complete/{{courseId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get Certificate (Learner)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/courses/certificate/{{courseId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "👨‍🏫 Instructor",
+      "item": [
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/courses",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Course Title\",\n  \"description\": \"Course description here\",\n  \"price\": 99,\n  \"category\": \"Web Development\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Add Material to Course",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/courses/{{courseId}}/material",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Lesson\",\n  \"content\": \"Lesson content goes here...\",\n  \"type\": \"document\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Courses (Instructor)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/courses/instructor/my-courses",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get Instructor Balance",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/instructor/balance",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏢 Admin",
+      "item": [
+        {
+          "name": "Get All Transactions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/transactions",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get Admin Balance",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/balance",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get Admin Dashboard Data",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/dashboard",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎓 Learner",
+      "item": [
+        {
+          "name": "Get Learner Balance",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/learner/balance",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    }
+  ]
+}
